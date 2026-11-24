@@ -52,6 +52,93 @@ service cloud.firestore {
       allow delete: if verified() && resource.data.by == request.auth.uid;
     }
 
+    function today() {
+      return math.floor(request.time.toMillis() / 86400000);
+    }
+    function storeExists(id) {
+      return exists(/databases/$(database)/documents/stores/$(id));
+    }
+
+    // ニックネーム（だれでも見られる・本人だけ書ける・メールアドレスは保存しない）
+    match /users/{uid} {
+      allow read: if true;
+      allow create, update: if verified() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name','updatedAt'])
+        && str(request.resource.data.name, 20) && request.resource.data.name.size() >= 1
+        && !request.resource.data.name.matches('.*[<>@].*')
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 在庫報告の記録（ポイントの元）：同じお店で1人1日1回まで。本人だけ見られる。消せない。
+    match /events/{eid} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['uid','type','storeId','day','at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.type == 'report'
+        && request.resource.data.day == today()
+        && request.resource.data.at == request.time
+        && storeExists(request.resource.data.storeId)
+        && eid == request.auth.uid + '_' + request.resource.data.storeId + '_' + string(request.resource.data.day);
+      allow update, delete: if false;
+    }
+
+    // 写真：圧縮したJPEGだけ・1店1人1日3枚まで・削除は本人だけ・書き換え不可
+    match /photos/{pid} {
+      allow read: if true;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['by','storeId','img','w','h','day','n','createdAt'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.day == today()
+        && request.resource.data.n in [1, 2, 3]
+        && request.resource.data.w is int && request.resource.data.w > 0 && request.resource.data.w <= 1200
+        && request.resource.data.h is int && request.resource.data.h > 0 && request.resource.data.h <= 1200
+        && request.resource.data.img is string && request.resource.data.img.size() <= 300000
+        && request.resource.data.img.matches('^data:image/jpeg;base64,[A-Za-z0-9+/]+=*$')
+        && request.resource.data.createdAt == request.time
+        && storeExists(request.resource.data.storeId)
+        && pid == request.auth.uid + '_' + request.resource.data.storeId + '_'
+                  + string(request.resource.data.day) + '_' + string(request.resource.data.n);
+      allow delete: if request.auth != null && resource.data.by == request.auth.uid;
+      allow update: if false;
+    }
+
+    // いいね：1人1回・自分の投稿には不可・取り消しは本人だけ
+    match /likes/{lid} {
+      allow read: if true;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['uid','target','tid','owner','storeId','at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.target in ['store','photo']
+        && lid == request.auth.uid + '_' + request.resource.data.target + '_' + request.resource.data.tid
+        && request.resource.data.owner != request.auth.uid
+        && (
+          (request.resource.data.target == 'store'
+            && request.resource.data.tid == request.resource.data.storeId
+            && get(/databases/$(database)/documents/stores/$(request.resource.data.tid)).data.by == request.resource.data.owner)
+          ||
+          (request.resource.data.target == 'photo'
+            && get(/databases/$(database)/documents/photos/$(request.resource.data.tid)).data.by == request.resource.data.owner
+            && get(/databases/$(database)/documents/photos/$(request.resource.data.tid)).data.storeId == request.resource.data.storeId)
+        );
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    // 写真の通報：1人1枚に1回。3件で画面から非表示
+    match /reports/{rid} {
+      allow read: if true;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['uid','pid','storeId','at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time
+        && rid == request.auth.uid + '_' + request.resource.data.pid
+        && get(/databases/$(database)/documents/photos/$(request.resource.data.pid)).data.storeId == request.resource.data.storeId;
+      allow update, delete: if false;
+    }
+
     // それ以外の場所は、だれも読み書きできない
     match /{document=**} {
       allow read, write: if false;

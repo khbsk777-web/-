@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-PFzSCVka1lDUtKR51aWewQ/qpDHC3pC+slvgkd6GBuo='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-xswEjki7RQE7QFhsfU5P/YHIktUcSvzweHA/ZEA8ZgY='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,6 +46,19 @@ header{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000002e;padding:c
 .acct{position:relative}.acct.in::after{content:"";position:absolute;right:8px;top:8px;width:10px;height:10px;border-radius:50%;background:#1e8e3e;border:2px solid #fff}
 .tabs{display:flex;gap:6px;margin:0 0 6px}.tabs button{flex:1;min-height:44px;border:0;border-bottom:3px solid var(--line);background:none;font:inherit;font-weight:800;color:var(--sub);cursor:pointer}.tabs button.on{border-color:var(--red);color:var(--ink)}
 .linkbtn{border:0;background:none;color:#1a73e8;font:inherit;font-size:14px;padding:10px 0;cursor:pointer;min-height:44px}
+.soc{padding:4px 14px 18px;border-top:1px solid var(--line)}
+.soc h4{margin:16px 0 4px;font-size:16px}
+.likebtn{border:1px solid #dadce0;background:#fff;border-radius:999px;font:inherit;font-weight:800;min-height:44px;padding:0 16px;cursor:pointer;color:var(--ink);margin-top:12px}
+.likebtn.on{background:#e8f0fe;border-color:#1a73e8;color:#1a73e8}
+.likebtn.sm{min-height:36px;padding:0 10px;font-size:13px;margin:0}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+.gal figure{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--soft)}
+.gal img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;cursor:zoom-in}
+.gal figcaption{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:6px;font-size:12px;color:var(--sub);flex-wrap:wrap}
+.mini{border:0;background:none;color:var(--sub);font:inherit;font-size:12px;min-height:36px;cursor:pointer;text-decoration:underline}
+.pts{background:var(--soft);border-radius:12px;padding:12px;margin:10px 0}
+.pts .big{font-size:36px;font-weight:800;color:var(--red);line-height:1.1}.pts small{font-size:14px;margin-left:4px;color:var(--sub)}
+#bigImg{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:10px}
 .ok{background:#e6f4ea;border:2px solid #1e8e3e;border-radius:10px;padding:8px 10px;font-size:14px}
 main{flex:1;position:relative;display:flex}
 .mapwrap{flex:1;position:relative;display:flex}
@@ -103,7 +116,7 @@ header{position:relative}
 @media (prefers-reduced-motion:reduce){.fab button.busy{animation:none;background:#dbe8fd}}
 :focus-visible{outline:3px solid var(--yel);outline-offset:2px}
 .pin{filter:drop-shadow(0 2px 2px #0005)}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;z-index:1100;transition:transform .25s}
+.toast{pointer-events:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;z-index:1100;transition:transform .25s}
 .toast.on{transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 @media(max-width:700px){
@@ -211,6 +224,7 @@ header{position:relative}
     <label for="aEmail">メールアドレス</label><input id="aEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="254">
     <label for="aPass">パスワード</label><input id="aPass" type="password" autocomplete="current-password" maxlength="128">
     <div id="aSign" hidden>
+      <label for="aNick">ニックネーム（みんなに表示されます）</label><input id="aNick" maxlength="20" autocomplete="nickname" placeholder="例：ガチャ太郎">
       <label for="aPass2">パスワード（もう一度）</label><input id="aPass2" type="password" autocomplete="new-password" maxlength="128">
       <p class="meta" id="aRule">10文字以上で、英字と数字を両方ふくめてね。</p>
     </div>
@@ -223,10 +237,15 @@ header{position:relative}
   </div>
   <div id="aIn" hidden>
     <p class="ok">ログイン中：<b id="aWho"></b></p>
+    <div class="pts" id="aPts"></div>
+    <label for="aNick2">ニックネーム（みんなに表示されます）</label>
+    <div style="display:flex;gap:8px"><input id="aNick2" maxlength="20" style="flex:1"><button type="button" class="btn b-line" id="aNickSave">保存</button></div>
     <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button type="button" class="btn b-line" id="aOut">ログアウト</button><button type="button" class="btn b-line" id="aDel" style="color:#c5221f">アカウントを削除</button></div>
   </div>
   <div class="acts"><button type="button" class="btn b-line" data-close>閉じる</button><button class="btn b-red" id="aGo">ログイン</button></div>
 </form></div>
+<div class="modal" id="mPhoto"><div class="card"><img id="bigImg" alt=""><p class="meta" id="bigCap"></p><div class="acts"><button class="btn b-line" data-close>閉じる</button></div></div></div>
+<input type="file" id="phFile" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
 
 <script src="firebase-config.js"></script>
@@ -386,7 +405,9 @@ function detail(s){
    <div class="meta">いま：${STOCK[m.stock]}・${ago(m.t)}に報告</div>
    <div class="rep">${Object.entries(STOCK).map(([k,v])=>`<button class="${k} ${m.stock===k?'sel':''}" data-st="${k}">${v}</button>`).join('')}</div></div>`).join('')
    :`<div class="empty">まだガチャが登録されていません。</div>`}
-   <div style="padding:14px"><button class="btn b-red" id="addM" style="width:100%">＋ このお店にガチャを追加</button></div>`;
+   <div style="padding:14px"><button class="btn b-red" id="addM" style="width:100%">＋ このお店にガチャを追加</button></div>
+   <div id="social"></div>`;
+  loadSocial(s);
 }
 function open(id){sel=id;const s=stores.find(x=>x.id===id);if(s)map.setView([s.lat,s.lng],Math.max(map.getZoom(),15));render()}
 function showModal(id,on){$(id).classList.toggle('on',on)}
@@ -452,7 +473,7 @@ $('pb').addEventListener('click',e=>{
   const rg=e.target.closest('[data-reg]');if(rg)return regCand(rg.dataset.reg);
   const it=e.target.closest('.item[data-id]');if(it)return open(it.dataset.id);
   const rb=e.target.closest('[data-st]');
-  if(rb){const s=stores.find(x=>x.id===sel),m=s.machines.find(x=>x.id===rb.closest('.mach').dataset.m);if(!canWrite())return;m.stock=rb.dataset.st;m.t=Date.now();commit(s);render();toast('報告ありがとう！');return}
+  if(rb){const s=stores.find(x=>x.id===sel),m=s.machines.find(x=>x.id===rb.closest('.mach').dataset.m);if(!canWrite())return;m.stock=rb.dataset.st;m.t=Date.now();commit(s);render();toast('報告ありがとう！');earn(s.id);return}
   if(e.target.id==='addM'){if(!canWrite())return;$('fMach').reset();showModal('mMach',true)}
 });
 $('pb').addEventListener('keydown',e=>{const it=e.target.closest('.item');if(it&&e.key==='Enter')open(it.dataset.id)});
@@ -495,7 +516,7 @@ $('fMach').addEventListener('submit',e=>{e.preventDefault();const s=stores.find(
   if(s.machines.some(m=>normName(m.title)===normName(title)))return toast('同じ名前のガチャがもう登録されています');
   if(s.machines.length>=300)return toast('1店舗に登録できる数の上限です');
   const st=$('mStock').value;
-  s.machines.push({id:safeId('','m'),title,price:Math.min(5000,Math.max(0,Math.round(+$('mPrice').value||0))),stock:has(STOCK,st)?st:'many',t:Date.now()});commit(s);showModal('mMach',false);render();toast('ガチャを追加しました')});
+  s.machines.push({id:safeId('','m'),title,price:Math.min(5000,Math.max(0,Math.round(+$('mPrice').value||0))),stock:has(STOCK,st)?st:'many',t:Date.now()});commit(s);earn(s.id);showModal('mMach',false);render();toast('ガチャを追加しました')});
 
 /* ---- OpenStreetMap からガチャ店を探して登録（利用OKのデータ・出典表示つき） ---- */
 let cands=[];
@@ -716,6 +737,7 @@ function openAuth(mode,msg){
   $('aGo').hidden=!(mode==='login'||mode==='signup');$('aGo').textContent=mode==='signup'?'登録する':'ログイン';
   $('aPass').autocomplete=mode==='signup'?'new-password':'current-password';
   if(user)$('aWho').textContent=user.email||'';
+  if(mode==='in'){showPoints();loadNick()}
   setAuthMsg(msg||'');$('aPass').value='';$('aPass2').value='';
   const d=$('aDel');d.textContent='アカウントを削除';delete d.dataset.ok;
   showModal('mAuth',true);
@@ -763,11 +785,12 @@ $('fAuth').addEventListener('submit',async e=>{
   if(!emailOk(email))return setAuthMsg('メールアドレスの形が正しくありません',true);
   if(amode==='signup'){
     const p=passProblem(pass,email);if(p)return setAuthMsg(p,true);
+    if(!nickOk($('aNick').value))return setAuthMsg('ニックネームは1〜20文字で入れてね（@ や < > は使えません）',true);
     if(pass!==$('aPass2').value)return setAuthMsg('2つのパスワードが同じではありません',true);
   }else if(!pass)return setAuthMsg('パスワードを入れてね',true);
   busy=true;$('aGo').disabled=true;setAuthMsg('通信しています…');
   try{
-    if(amode==='signup'){const c=await U.createUserWithEmailAndPassword(auth,email,pass);await U.sendEmailVerification(c.user);openAuth('verify')}
+    if(amode==='signup'){const c=await U.createUserWithEmailAndPassword(auth,email,pass);try{localStorage.setItem('gachamap-nick',nickClean($('aNick').value))}catch(x){}await U.sendEmailVerification(c.user);openAuth('verify')}
     else{await U.signInWithEmailAndPassword(auth,email,pass);openAuth(auth.currentUser&&auth.currentUser.emailVerified?'in':'verify');toast('ログインしました')}
   }catch(err){setAuthMsg(aerr(err),true)}
   finally{busy=false;$('aGo').disabled=false;$('aPass').value='';$('aPass2').value=''}
@@ -806,6 +829,145 @@ async function startCloud(){
     },()=>toast('共有データを読み込めませんでした'));
   }catch(e){cloud=null;stores=load();render();toast('共有モードを始められませんでした。この端末の中だけに保存します')}
 }
+/* ===== ポイント・写真・👍いいね（ズルできないよう、記録の数からポイントを計算） ===== */
+const PT={store:10,report:2,photo:5,liked:1};
+const LEVELS=[[0,'ビギナー'],[30,'ガチャ好き'],[100,'ガチャハンター'],[300,'ガチャマスター'],[1000,'ガチャレジェンド']];
+const IMG_RE=/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
+const today=()=>Math.floor(Date.now()/86400000);
+const okId=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,200}$/.test(v);
+function nickClean(v){return clean(v,20)}
+function nickOk(v){v=nickClean(v);return v.length>=1&&!/[<>@]/.test(v)&&!/https?:|www\./i.test(v)}
+const names=new Map();
+async function nameOf(uid){
+  if(!okId(uid))return'ゲスト';if(names.has(uid))return names.get(uid);
+  let n='ガチャ好きさん';
+  try{const d=await cloud.F.getDoc(cloud.F.doc(cloud.db,'users',uid));if(d.exists()&&nickOk(d.data().name))n=nickClean(d.data().name)}catch(e){}
+  names.set(uid,n);return n;
+}
+async function saveNick(v){
+  if(!cloud||!user||!user.emailVerified)return false;
+  if(!nickOk(v)){toast('ニックネームは1〜20文字で入れてね（@ や < > は使えません）');return false}
+  try{await cloud.F.setDoc(cloud.F.doc(cloud.db,'users',user.uid),{name:nickClean(v),updatedAt:cloud.F.serverTimestamp()});names.set(user.uid,nickClean(v));return true}
+  catch(e){toast('ニックネームを保存できませんでした');return false}
+}
+async function loadNick(){
+  if(!cloud||!user)return;
+  let n='';
+  try{const d=await cloud.F.getDoc(cloud.F.doc(cloud.db,'users',user.uid));if(d.exists())n=nickClean(d.data().name)}catch(e){}
+  if(!n&&user.emailVerified){let p='';try{p=localStorage.getItem('gachamap-nick')||''}catch(e){}if(nickOk(p)&&await saveNick(p))n=nickClean(p)}
+  $('aNick2').value=n;
+}
+$('aNickSave').addEventListener('click',async()=>{if(await saveNick($('aNick2').value))toast('ニックネームを保存しました')});
+function level(p){let l=LEVELS[0],n=null;for(const x of LEVELS){if(p>=x[0])l=x;else{n=x;break}}return{name:l[1],next:n}}
+async function showPoints(){
+  const el=$('aPts');if(!cloud||!user){el.textContent='';return}
+  el.textContent='ポイントを計算しています…';
+  const {F,db}=cloud,u=user.uid,c=q=>F.getCountFromServer(q).then(r=>r.data().count).catch(()=>0);
+  const st=stores.filter(x=>x.by===u).length;
+  const [rp,ph,lk]=await Promise.all([
+    c(F.query(F.collection(db,'events'),F.where('uid','==',u))),
+    c(F.query(F.collection(db,'photos'),F.where('by','==',u))),
+    c(F.query(F.collection(db,'likes'),F.where('owner','==',u)))]);
+  const total=st*PT.store+rp*PT.report+ph*PT.photo+lk*PT.liked,lv=level(total);
+  el.innerHTML=`<div class="big">${total}<small>ポイント</small></div><div>レベル：<b>${lv.name}</b>${lv.next?`（あと${lv.next[0]-total}ポイントで「${lv.next[1]}」）`:''}</div>
+   <div class="meta">お店の登録 ${st}件×${PT.store}・在庫の報告 ${rp}回×${PT.report}・写真 ${ph}枚×${PT.photo}・もらったいいね ${lk}×${PT.liked}</div>
+   <div class="meta">在庫の報告ポイントは、同じお店で1日1回までです。</div>`;
+}
+function earn(storeId){
+  if(!cloud||!user||!user.emailVerified||!okId(storeId))return;
+  const {F,db}=cloud,day=today();
+  F.setDoc(F.doc(db,'events',`${user.uid}_${storeId}_${day}`),{uid:user.uid,type:'report',storeId,day,at:F.serverTimestamp()})
+    .then(()=>toast(`報告ありがとう！ +${PT.report}ポイント`)).catch(()=>{});
+}
+/* お店ごとの写真・いいね（1分間は読み込み直さない＝通信と無料枠の節約） */
+const social=new Map();
+async function loadSocial(s,force){
+  const box=$('social');if(!box)return;
+  if(!cloud){box.innerHTML='<div class="soc"><p class="meta">📷 写真・👍 いいね・⭐ ポイントは、みんなで共有するモードで使えます（ただいま準備中）。</p></div>';return}
+  const c=social.get(s.id);
+  if(c&&!force&&Date.now()-c.at<60000)return drawSocial(s,c);
+  if(!c)box.innerHTML='<div class="soc"><p class="meta">写真といいねを読み込み中…</p></div>';
+  const {F,db}=cloud,col=n=>F.collection(db,n);
+  try{
+    const [ps,ls,rs]=await Promise.all([
+      F.getDocs(F.query(col('photos'),F.where('storeId','==',s.id),F.limit(30))),
+      F.getDocs(F.query(col('likes'),F.where('storeId','==',s.id),F.limit(1000))),
+      F.getDocs(F.query(col('reports'),F.where('storeId','==',s.id),F.limit(500)))]);
+    const likes={},mine=new Set(),rep={},myRep=new Set();
+    ls.docs.forEach(d=>{const x=d.data();if(!okId(x.tid)||!['store','photo'].includes(x.target))return;likes[x.target+'_'+x.tid]=(likes[x.target+'_'+x.tid]||0)+1;if(user&&x.uid===user.uid)mine.add(x.target+'_'+x.tid)});
+    rs.docs.forEach(d=>{const x=d.data();if(!okId(x.pid))return;rep[x.pid]=(rep[x.pid]||0)+1;if(user&&x.uid===user.uid)myRep.add(x.pid)});
+    const photos=ps.docs.map(d=>{const x=d.data();
+      if(!okId(d.id)||!okId(x.by)||typeof x.img!=='string'||x.img.length>400000||!IMG_RE.test(x.img))return null;
+      return{id:d.id,by:x.by,img:x.img,w:Math.min(1200,Math.max(1,x.w|0)),h:Math.min(1200,Math.max(1,x.h|0)),t:x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0}}).filter(Boolean).sort((a,b)=>b.t-a.t);
+    await Promise.all(photos.map(async p=>{p.name=await nameOf(p.by)}));
+    const nc={at:Date.now(),photos,likes,mine,rep,myRep};social.set(s.id,nc);
+    if(sel===s.id)drawSocial(s,nc);
+  }catch(e){box.innerHTML='<div class="soc"><p class="meta">写真といいねを読み込めませんでした。</p></div>'}
+}
+function drawSocial(s,c){
+  const box=$('social');if(!box||sel!==s.id)return;
+  const me=user&&user.uid,ph=c.photos.filter(p=>(c.rep[p.id]||0)<3||p.by===me),sl=c.likes['store_'+s.id]||0;
+  box.innerHTML=`<div class="soc">
+   <button class="likebtn ${c.mine.has('store_'+s.id)?'on':''}" data-like="store" data-tid="${esc(s.id)}" aria-pressed="${c.mine.has('store_'+s.id)}">👍 このお店の情報にいいね <b>${sl}</b></button>
+   <h4>📷 写真 <span class="meta">${ph.length}枚</span></h4>
+   ${ph.length?`<div class="gal">${ph.map(p=>{const k='photo_'+p.id,own=p.by===me;return`<figure><img src="${p.img}" alt="${esc(s.name)}の写真" loading="lazy" width="${p.w}" height="${p.h}" data-big="${esc(p.id)}">
+     <figcaption><span>${esc(p.name)}・${ago(p.t)}</span><span><button class="likebtn sm ${c.mine.has(k)?'on':''}" data-like="photo" data-tid="${esc(p.id)}" aria-label="いいね">👍 ${c.likes[k]||0}</button>
+     ${own?`<button class="mini" data-delph="${esc(p.id)}">削除</button>`:c.myRep.has(p.id)?'<span class="meta">通報済み</span>':`<button class="mini" data-repph="${esc(p.id)}">通報</button>`}</span></figcaption></figure>`}).join('')}</div>`
+   :`<p class="meta">まだ写真がありません。最初の1枚を投稿しよう（+${PT.photo}ポイント）</p>`}
+   <button class="btn b-line" id="phBtn" style="width:100%">📷 写真を投稿（+${PT.photo}ポイント）</button>
+   <p class="meta">お店やガチャの写真をどうぞ。人の顔や、ほかの人の個人情報が写らないようにしてね。位置情報などの撮影データは自動で消します。1つのお店に1日3枚まで。</p></div>`;
+}
+async function toggleLike(target,tid){
+  if(!canWrite())return;
+  const s=stores.find(x=>x.id===sel),c=social.get(sel);if(!s||!c||!okId(tid))return;
+  let owner;
+  if(target==='store'){if(tid!==s.id)return;owner=s.by}else{const p=c.photos.find(x=>x.id===tid);owner=p&&p.by}
+  if(!owner)return toast('いいねできませんでした');
+  if(owner===user.uid)return toast('自分の投稿にはいいねできません');
+  const {F,db}=cloud,ref=F.doc(db,'likes',`${user.uid}_${target}_${tid}`),k=target+'_'+tid,on=c.mine.has(k);
+  try{
+    if(on){await F.deleteDoc(ref);c.mine.delete(k);c.likes[k]=Math.max(0,(c.likes[k]||1)-1)}
+    else{await F.setDoc(ref,{uid:user.uid,target,tid,owner,storeId:s.id,at:F.serverTimestamp()});c.mine.add(k);c.likes[k]=(c.likes[k]||0)+1}
+    drawSocial(s,c);
+  }catch(e){toast('いいねできませんでした')}
+}
+function loadImg(file){return new Promise((ok,ng)=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{URL.revokeObjectURL(u);ok(i)};i.onerror=()=>{URL.revokeObjectURL(u);ng()};i.src=u})}
+async function postPhoto(file){
+  const s=stores.find(x=>x.id===sel);if(!file||!s||!cloud||!user)return;
+  if(file.type&&!/^image\//.test(file.type))return toast('画像ファイルを選んでね');
+  if(file.size>30e6)return toast('画像が大きすぎます');
+  toast('写真を小さくしています…');
+  let img;try{img=await loadImg(file)}catch(e){return toast('この画像は読み込めませんでした')}
+  /* 画面に描き直してJPEGで保存＝位置情報などの撮影データは消える */
+  let max=1000,q=.8,data='',w=0,h=0;
+  for(let i=0;i<7;i++){
+    const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));w=Math.max(1,Math.round(img.naturalWidth*sc));h=Math.max(1,Math.round(img.naturalHeight*sc));
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,w,h);g.drawImage(img,0,0,w,h);
+    data=cv.toDataURL('image/jpeg',q);if(data.length<=280000)break;max=Math.round(max*.82);q=Math.max(.5,q-.07);
+  }
+  if(data.length>280000||!IMG_RE.test(data))return toast('写真を小さくできませんでした');
+  const {F,db}=cloud,day=today();let ok=false;
+  for(const n of [1,2,3]){
+    try{await F.setDoc(F.doc(db,'photos',`${user.uid}_${s.id}_${day}_${n}`),{by:user.uid,storeId:s.id,img:data,w,h,day,n,createdAt:F.serverTimestamp()});ok=true;break}
+    catch(e){if(!e||e.code!=='permission-denied')break}
+  }
+  if(!ok)return toast('投稿できませんでした（1つのお店に1日3枚まで）');
+  toast(`写真を投稿しました！ +${PT.photo}ポイント`);loadSocial(s,true);
+}
+$('pb').addEventListener('click',async e=>{
+  const lb=e.target.closest('[data-like]');if(lb)return toggleLike(lb.dataset.like,lb.dataset.tid);
+  if(e.target.id==='phBtn'){if(!canWrite())return;$('phFile').value='';$('phFile').click();return}
+  const bi=e.target.closest('[data-big]');
+  if(bi){const c=social.get(sel),p=c&&c.photos.find(x=>x.id===bi.dataset.big);if(p){$('bigImg').src=p.img;$('bigCap').textContent=p.name+'・'+ago(p.t);showModal('mPhoto',true)}return}
+  const dp=e.target.closest('[data-delph]');
+  if(dp){if(!dp.dataset.ok){dp.dataset.ok=1;dp.textContent='本当に削除';return}
+    try{await cloud.F.deleteDoc(cloud.F.doc(cloud.db,'photos',dp.dataset.delph));toast('写真を削除しました');const s=stores.find(x=>x.id===sel);s&&loadSocial(s,true)}catch(x){toast('削除できませんでした')}return}
+  const rp=e.target.closest('[data-repph]');
+  if(rp){if(!canWrite())return;if(!rp.dataset.ok){rp.dataset.ok=1;rp.textContent='不適切として通報する';return}
+    const pid=rp.dataset.repph;
+    try{await cloud.F.setDoc(cloud.F.doc(cloud.db,'reports',`${user.uid}_${pid}`),{uid:user.uid,pid,storeId:sel,at:cloud.F.serverTimestamp()});toast('通報しました。3件集まると非表示になります');const s=stores.find(x=>x.id===sel);s&&loadSocial(s,true)}catch(x){toast('通報できませんでした')}}
+});
+$('phFile').addEventListener('change',e=>postPhoto(e.target.files&&e.target.files[0]));
 if(FB){stores=[];startCloud()}
 render();
 }
