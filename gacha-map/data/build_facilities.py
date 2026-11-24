@@ -4,33 +4,11 @@ GitHub Actions で実行する（スマホのアプリはこのファイルを�
 import json, re, sys, time, urllib.parse, urllib.request, datetime, os
 
 ENDPOINTS = ["https://overpass-api.de/api/interpreter",
-             "https://overpass.kumi.systems/api/interpreter",
-             "https://overpass.private.coffee/api/interpreter"]
-AREA = 'area["ISO3166-1"="JP"][admin_level=2]->.jp;'
-QUERIES = {
-    "aeon": AREA + 'nwr["shop"~"^(mall|department_store|supermarket)$"]["name"~"^(イオン|AEON)"](area.jp);'
-                   'nwr["shop"~"^(mall|department_store|supermarket)$"]["brand"~"^(イオン|AEON)"](area.jp);',
-    "drug": AREA + 'nwr["shop"="chemist"](area.jp);',
-}
-MIN_COUNT = {"aeon": 100, "drug": 3000}   # これより少ないときは取得失敗とみなし、古いデータを残す
-
-
-def fetch(body):
-    data = urllib.parse.urlencode({"data": "[out:json][timeout:900];" + body + "out center tags;"}).encode()
-    last = None
-    for ep in ENDPOINTS:
-        for attempt in range(2):
-            try:
-                req = urllib.request.Request(ep, data=data, headers={"User-Agent": "gacha-map-facilities/1.0 (github.com/khbsk777-web)"})
-                with urllib.request.urlopen(req, timeout=960) as r:
-                    return json.load(r)["elements"]
-            except Exception as e:  # noqa: BLE001
-                last = e
-                print(f"retry {ep}: {e}", file=sys.stderr)
-                time.sleep(30)
-    raise SystemExit(f"Overpass failed: {last}")
-
-
+             "https://overpass.private.coffee/api/interpreter",
+             "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+             "https://overpass.kumi.systems/api/interpreter"]
+UA = {"User-Agent": "gacha-map-facilities/1.1 (https://github.com/khbsk777-web)"}
+MIN_COUNT = {"aeon": 100, "drug": 3000}   # これより少ないときは失敗とみなし、古いデータを残す
 CTRL = re.compile(r"[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩﻿]")
 
 
@@ -38,10 +16,41 @@ def clean(v, n):
     return re.sub(r"\s+", " ", CTRL.sub("", str(v or ""))).strip()[:n]
 
 
-items, seen, counts = [], set(), {}
-for key, q in QUERIES.items():
-    els = fetch(q)
-    n = 0
+def query(bbox):
+    s, w, n, e = bbox
+    bb = f"{s},{w},{n},{e}"
+    return ('[out:json][timeout:240];area["ISO3166-1"="JP"][admin_level=2]->.jp;('
+            f'nwr["shop"~"^(mall|department_store|supermarket)$"]["name"~"^(イオン|AEON)"](area.jp)({bb});'
+            f'nwr["shop"~"^(mall|department_store|supermarket)$"]["brand"~"^(イオン|AEON)"](area.jp)({bb});'
+            f'nwr["shop"="chemist"](area.jp)({bb});'
+            ');out center tags;')
+
+
+def fetch(bbox):
+    data = urllib.parse.urlencode({"data": query(bbox)}).encode()
+    last = None
+    for rnd in range(3):
+        for ep in ENDPOINTS:
+            try:
+                req = urllib.request.Request(ep, data=data, headers=UA)
+                with urllib.request.urlopen(req, timeout=300) as r:
+                    j = json.load(r)
+                remark = str(j.get("remark", ""))
+                if "error" in remark.lower() or "timed out" in remark.lower():
+                    raise RuntimeError("remark: " + remark[:200])
+                return j.get("elements", [])
+            except Exception as ex:  # noqa: BLE001
+                last = ex
+                print(f"  retry {ep}: {ex}", file=sys.stderr, flush=True)
+                time.sleep(10 + rnd * 20)
+    raise SystemExit(f"Overpass failed for {bbox}: {last}")
+
+
+# 日本を 4度×4度 の区画に分けて少しずつ取得（サーバーの負担を減らし、失敗しにくくする）
+boxes = [(la, lo, la + 4, lo + 4) for la in range(24, 46, 4) for lo in range(122, 150, 4)]
+items, seen, counts = [], set(), {"aeon": 0, "drug": 0}
+for i, bx in enumerate(boxes, 1):
+    els = fetch(bx)
     for e in els:
         t = e.get("tags", {})
         lat = e.get("lat", e.get("center", {}).get("lat"))
@@ -52,17 +61,22 @@ for key, q in QUERIES.items():
             continue
         if not (20 <= lat <= 46 and 122 <= lon <= 154) or not re.fullmatch(r"(node|way|relation)/\d+", osm):
             continue
-        if key == "aeon":
+        if t.get("shop") == "chemist":
+            kind, grp = "chemist", "drug"
+        elif re.match(r"^(イオン|AEON)", name) or re.match(r"^(イオン|AEON)", str(t.get("brand", ""))):
             kind = "aeonmall" if re.search(r"モール|MALL|Mall", name) or t.get("shop") == "mall" else "aeon"
+            grp = "aeon"
         else:
-            kind = "chemist"
+            continue
         seen.add(osm)
         items.append([round(lat, 5), round(lon, 5), kind, name, osm])
-        n += 1
-    counts[key] = n
-    print(key, n)
-    if n < MIN_COUNT[key]:
-        raise SystemExit(f"too few {key}: {n} (keep old data)")
+        counts[grp] += 1
+    print(f"[{i}/{len(boxes)}] {bx} -> {len(els)}  total aeon={counts['aeon']} drug={counts['drug']}", flush=True)
+    time.sleep(3)
+
+for k, m in MIN_COUNT.items():
+    if counts[k] < m:
+        raise SystemExit(f"too few {k}: {counts[k]} (keep old data)")
 
 out = {"updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ"),
        "source": "(c) OpenStreetMap contributors, ODbL 1.0", "counts": counts, "items": items}
