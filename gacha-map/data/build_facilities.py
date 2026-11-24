@@ -16,24 +16,28 @@ def clean(v, n):
     return re.sub(r"\s+", " ", CTRL.sub("", str(v or ""))).strip()[:n]
 
 
-def query(bbox):
-    s, w, n, e = bbox
-    bb = f"{s},{w},{n},{e}"
-    return ('[out:json][timeout:240];area["ISO3166-1"="JP"][admin_level=2]->.jp;('
-            f'nwr["shop"~"^(mall|department_store|supermarket)$"]["name"~"^(イオン|AEON)"](area.jp)({bb});'
-            f'nwr["shop"~"^(mall|department_store|supermarket)$"]["brand"~"^(イオン|AEON)"](area.jp)({bb});'
-            f'nwr["shop"="chemist"](area.jp)({bb});'
+PREFS = ("北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県 茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県 新潟県 富山県 "
+         "石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県 三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県 鳥取県 島根県 "
+         "岡山県 広島県 山口県 徳島県 香川県 愛媛県 高知県 福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県").split()
+
+
+def query(pref):
+    return ('[out:json][timeout:180];'
+            f'area["name"="{pref}"]["admin_level"="4"]["boundary"="administrative"]->.a;('
+            'nwr["shop"~"^(mall|department_store|supermarket)$"]["name"~"^(イオン|AEON)"](area.a);'
+            'nwr["shop"~"^(mall|department_store|supermarket)$"]["brand"~"^(イオン|AEON)"](area.a);'
+            'nwr["shop"="chemist"](area.a);'
             ');out center tags;')
 
 
-def fetch(bbox):
-    data = urllib.parse.urlencode({"data": query(bbox)}).encode()
+def fetch(pref):
+    data = urllib.parse.urlencode({"data": query(pref)}).encode()
     last = None
-    for rnd in range(3):
+    for rnd in range(2):
         for ep in ENDPOINTS:
             try:
                 req = urllib.request.Request(ep, data=data, headers=UA)
-                with urllib.request.urlopen(req, timeout=300) as r:
+                with urllib.request.urlopen(req, timeout=200) as r:
                     j = json.load(r)
                 remark = str(j.get("remark", ""))
                 if "error" in remark.lower() or "timed out" in remark.lower():
@@ -41,16 +45,15 @@ def fetch(bbox):
                 return j.get("elements", [])
             except Exception as ex:  # noqa: BLE001
                 last = ex
-                print(f"  retry {ep}: {ex}", file=sys.stderr, flush=True)
-                time.sleep(10 + rnd * 20)
-    raise SystemExit(f"Overpass failed for {bbox}: {last}")
+                print(f"  retry {pref} {ep}: {ex}", file=sys.stderr, flush=True)
+                time.sleep(15 + rnd * 30)
+    raise SystemExit(f"Overpass failed for {pref}: {last}")
 
 
-# 日本を 4度×4度 の区画に分けて少しずつ取得（サーバーの負担を減らし、失敗しにくくする）
-boxes = [(la, lo, la + 4, lo + 4) for la in range(24, 46, 4) for lo in range(122, 150, 4)]
+# 都道府県ごとに少しずつ取得（日本国内だけ・サーバーの負担が小さい）
 items, seen, counts = [], set(), {"aeon": 0, "drug": 0}
-for i, bx in enumerate(boxes, 1):
-    els = fetch(bx)
+for i, pref in enumerate(PREFS, 1):
+    els = fetch(pref)
     for e in els:
         t = e.get("tags", {})
         lat = e.get("lat", e.get("center", {}).get("lat"))
@@ -71,8 +74,8 @@ for i, bx in enumerate(boxes, 1):
         seen.add(osm)
         items.append([round(lat, 5), round(lon, 5), kind, name, osm])
         counts[grp] += 1
-    print(f"[{i}/{len(boxes)}] {bx} -> {len(els)}  total aeon={counts['aeon']} drug={counts['drug']}", flush=True)
-    time.sleep(3)
+    print(f"[{i}/47] {pref}: {len(els)}  total aeon={counts['aeon']} drug={counts['drug']}", flush=True)
+    time.sleep(2)
 
 for k, m in MIN_COUNT.items():
     if counts[k] < m:
