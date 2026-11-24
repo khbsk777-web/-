@@ -13,7 +13,9 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'sha256-U9wnAV2O2vH7m7HFrNzPwqj4r/mxuRmsadyucy4qwz8='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
 <style>
@@ -84,6 +86,7 @@ main{flex:1;position:relative;display:flex}
 .card textarea{min-height:140px;font-size:13px}
 .acts{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
 header{position:relative}
+.warn{background:#fff6d9;border:2px solid #e0a800;border-radius:10px;padding:8px 10px;font-size:14px;margin:0 0 6px}
 .sugg{position:absolute;left:14px;right:14px;top:58px;background:#fff;color:var(--ink);border-radius:14px;box-shadow:0 8px 24px #0003;max-height:60vh;overflow:auto;display:none;z-index:600}
 .sugg.on{display:block}
 .sugg h4{margin:0;padding:10px 14px 4px;font-size:12px;color:var(--sub)}
@@ -149,17 +152,19 @@ header{position:relative}
 
 <div class="modal" id="mStore"><form class="card" id="fStore">
   <h3>店舗を追加</h3>
-  <label for="sName">店名 *</label><input id="sName" required maxlength="40" placeholder="例：〇〇モール 2F ガチャコーナー">
+  <p class="meta" id="sPos"></p>
+  <p class="warn" id="sWarn" hidden></p>
+  <label for="sName">店名 *</label><input id="sName" required minlength="2" maxlength="60" placeholder="例：〇〇モール 2F ガチャコーナー">
   <label for="sType">種類</label><select id="sType"></select>
-  <label for="sHours">営業時間</label><input id="sHours" maxlength="30" placeholder="例：10:00〜21:00">
-  <label for="sAddr">場所のメモ</label><input id="sAddr" maxlength="60" placeholder="例：エスカレーター横">
+  <label for="sHours">営業時間</label><input id="sHours" maxlength="40" placeholder="例：10:00〜21:00">
+  <label for="sAddr">住所・場所のメモ</label><input id="sAddr" maxlength="80" placeholder="住所を自動で調べています…">
   <div class="acts"><button type="button" class="btn b-line" data-close>やめる</button><button class="btn b-red">追加する</button></div>
 </form></div>
 
 <div class="modal" id="mMach"><form class="card" id="fMach">
   <h3>ガチャを追加</h3>
-  <label for="mTitle">ガチャの名前 *</label><input id="mTitle" required maxlength="40" placeholder="例：ミニチュアパンコレクション">
-  <label for="mPrice">1回の値段（円）</label><input id="mPrice" type="number" min="100" step="100" value="300">
+  <label for="mTitle">ガチャの名前 *</label><input id="mTitle" required maxlength="60" placeholder="例：ミニチュアパンコレクション">
+  <label for="mPrice">1回の値段（円）</label><input id="mPrice" type="number" min="100" max="5000" step="100" value="300" inputmode="numeric">
   <label for="mStock">いまの在庫</label><select id="mStock"><option value="many">たくさん</option><option value="few">残りわずか</option><option value="out">売切れ</option></select>
   <div class="acts"><button type="button" class="btn b-line" data-close>やめる</button><button class="btn b-red">追加する</button></div>
 </form></div>
@@ -170,6 +175,13 @@ header{position:relative}
   <textarea id="dTxt" aria-label="データ"></textarea>
   <div class="acts"><button class="btn b-line" data-close>閉じる</button><button class="btn b-line" id="dCopy">コピー</button><button class="btn b-red" id="dLoad">読み込む</button></div>
 </div></div>
+<div class="modal" id="mOsm"><div class="card">
+  <h3>この範囲のガチャ店を探す</h3>
+  <p class="meta">OpenStreetMap（だれでも使ってよい地図データ）から、今見ている範囲のガチャ店・カプセルトイ自販機を探します。登録したいお店にチェックを入れてね。</p>
+  <div id="oList"></div>
+  <p class="meta">場所データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）</p>
+  <div class="acts"><button class="btn b-line" data-close>閉じる</button><button class="btn b-red" id="oAdd" disabled>選んだお店を登録</button></div>
+</div></div>
 <div class="modal" id="mGeo"><div class="card">
   <h3>現在地が取れませんでした</h3>
   <div id="gMsg"></div>
@@ -178,7 +190,7 @@ header{position:relative}
 </div></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <script>
 {
 const KEY='gachamap-v1';
@@ -205,7 +217,32 @@ const SAMPLE=[
 let stores=load(),sel=null,q='',ftype='all',fstock=false,ffresh=false,me=null,adding=false,pending=null,place=null,placeMark=null,accCircle=null,watchId=null,stopTimer=null,geoTimer=null,geoSeq=0;
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(d))return d}catch(e){}return structuredClone(SAMPLE)}
+/* ---- セキュリティ：入ってくる文字・データはすべて形と長さをチェックしてから使う ---- */
+function has(o,k){return typeof k==='string'&&Object.prototype.hasOwnProperty.call(o,k)}
+function clean(v,max){return String(v??'').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩﻿]/g,'').replace(/\s+/g,' ').trim().slice(0,max)}
+function safeId(v,p){return clean(v,40).replace(/[^\w-]/g,'')||p+Math.random().toString(36).slice(2,10)}
+function inJapan(la,ln){return la>=20&&la<=46&&ln>=122&&ln<=154}
+function valid(d){
+  if(!Array.isArray(d))return null;
+  const out=[],ids=new Set();
+  for(const s of d.slice(0,5000)){
+    if(!s||typeof s!=='object')continue;
+    const lat=+s.lat,lng=+s.lng,name=clean(s.name,60);
+    if(!isFinite(lat)||!isFinite(lng)||!inJapan(lat,lng)||!name)continue;
+    let id=safeId(s.id,'s');while(ids.has(id))id+='x';ids.add(id);
+    const mids=new Set();
+    const ms=(Array.isArray(s.machines)?s.machines:[]).slice(0,300).map(m=>{
+      if(!m||typeof m!=='object')return null;
+      let mid=safeId(m.id,'m');while(mids.has(mid))mid+='x';mids.add(mid);
+      return{id:mid,title:clean(m.title,60),price:Math.min(5000,Math.max(0,Math.round(+m.price||0))),stock:has(STOCK,m.stock)?m.stock:'many',t:Math.min(Date.now(),Math.max(0,+m.t||0))};
+    }).filter(m=>m&&m.title);
+    const st={id,name,type:has(TYPES,s.type)?s.type:'shop',lat,lng,hours:clean(s.hours,40),addr:clean(s.addr,80),machines:ms};
+    const osm=clean(s.osm,30);if(/^(node|way|relation)\/\d+$/.test(osm))st.osm=osm;
+    out.push(st);
+  }
+  return out;
+}
+function load(){try{const v=valid(JSON.parse(localStorage.getItem(KEY)));if(v&&v.length)return v}catch(e){}return valid(SAMPLE)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(stores))}catch(e){}}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2000)}
 function ago(t){if(!t)return'';const m=(Date.now()-t)/6e4;if(m<1)return'たった今';if(m<60)return Math.floor(m)+'分前';if(m<1440)return Math.floor(m/60)+'時間前';return Math.floor(m/1440)+'日前'}
@@ -237,7 +274,7 @@ const layer=L.layerGroup().addTo(map);let meMark=null;
 
 function chips(){
   const c=[['all','すべて'],...Object.entries(TYPES)].map(([k,v])=>`<button class="chip ${ftype===k?'on':''}" data-t="${k}">${v}</button>`).join('');
-  $('chips').innerHTML=c+`<button class="chip ${fstock?'on':''}" data-f="stock">在庫ありだけ</button><button class="chip ${ffresh?'on':''}" data-f="fresh">24時間以内に更新</button><button class="chip" data-f="data">データ</button>`;
+  $('chips').innerHTML=c+`<button class="chip ${fstock?'on':''}" data-f="stock">在庫ありだけ</button><button class="chip ${ffresh?'on':''}" data-f="fresh">24時間以内に更新</button><button class="chip" data-f="osm">この範囲のガチャ店を探す</button><button class="chip" data-f="data">データ</button>`;
 }
 function render(){
   chips();const vs=visible();layer.clearLayers();
@@ -259,7 +296,9 @@ function detail(s){
   $('ph').innerHTML=`<button class="icon" id="back" aria-label="一覧に戻る">←</button><h2>${esc(s.name)}</h2><button class="icon" id="del" aria-label="店舗を削除">🗑</button>`;
   const ms=[...s.machines].sort((a,b)=>({many:0,few:1,out:2}[a.stock]-{many:0,few:1,out:2}[b.stock]));
   $('pb').innerHTML=`<div class="info"><div>${esc(TYPES[s.type]||'')}${ref()?'・'+(place?esc(place.name)+'から ':'現在地から ')+fmtD(dist(s)):''}</div>${s.hours?`<div>🕘 ${esc(s.hours)}</div>`:''}${s.addr?`<div>📌 ${esc(s.addr)}</div>`:''}
-   <div class="go">${IOS?`<a href="https://maps.apple.com/?daddr=${+s.lat},${+s.lng}&dirflg=w">Appleマップで道順</a>`:''}<a href="https://www.google.com/maps/dir/?api=1&destination=${+s.lat},${+s.lng}&travelmode=walking" target="_blank" rel="noopener">Googleマップで道順</a></div></div>
+   <div class="go">${IOS?`<a href="https://maps.apple.com/?daddr=${+s.lat},${+s.lng}&dirflg=w">Appleマップで道順</a>`:''}<a href="https://www.google.com/maps/dir/?api=1&destination=${+s.lat},${+s.lng}&travelmode=walking" target="_blank" rel="noopener">Googleマップで道順</a></div>
+   <a href="https://gashapon.jp/shop/gplus_list.php" target="_blank" rel="noopener">ガシャポン公式サイトの店舗検索で確認する</a>
+   ${s.osm?`<div>場所データ © <a href="https://www.openstreetmap.org/${esc(s.osm)}" target="_blank" rel="noopener">OpenStreetMap contributors</a></div>`:''}</div>
    ${ms.length?ms.map(m=>`<div class="mach" data-m="${esc(m.id)}"><div class="row"><b>${esc(m.title)}</b><span class="price">${Number(m.price)||'-'}円</span></div>
    <div class="meta">いま：${STOCK[m.stock]}・${ago(m.t)}に報告</div>
    <div class="rep">${Object.entries(STOCK).map(([k,v])=>`<button class="${k} ${m.stock===k?'sel':''}" data-st="${k}">${v}</button>`).join('')}</div></div>`).join('')
@@ -274,6 +313,7 @@ $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)
   if(b.dataset.f==='stock')fstock=!fstock;
   if(b.dataset.f==='fresh')ffresh=!ffresh;
   if(b.dataset.f==='data'){$('dTxt').value=JSON.stringify(stores);showModal('mData',true);return}
+  if(b.dataset.f==='osm'){osmScan();return}
   sel=null;render()});
 /* ---- 場所検索：駅・施設は OpenStreetMap(Nominatim)、住所は国土地理院 ---- */
 let found=[];
@@ -339,11 +379,77 @@ $('ph').addEventListener('click',e=>{
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.modal').classList.remove('on')));
 $('sType').innerHTML=Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
 $('add').addEventListener('click',()=>{adding=!adding;$('banner').style.display=adding?'block':'none';map.getContainer().style.cursor=adding?'crosshair':''});
-map.on('click',e=>{if(!adding)return;adding=false;$('banner').style.display='none';map.getContainer().style.cursor='';pending=e.latlng;$('fStore').reset();showModal('mStore',true);$('sName').focus()});
-$('fStore').addEventListener('submit',e=>{e.preventDefault();const s={id:'s'+Date.now(),name:$('sName').value.trim(),type:$('sType').value,hours:$('sHours').value.trim(),addr:$('sAddr').value.trim(),lat:pending.lat,lng:pending.lng,machines:[]};
+/* ---- 店舗登録：場所の確認・住所の自動入力・重複チェック ---- */
+function nearBy(lat,lng,r){return stores.filter(s=>map.distance([lat,lng],[s.lat,s.lng])<r)}
+const normName=t=>clean(t,60).normalize('NFKC').toLowerCase().replace(/[\s・\-ー]/g,'');
+let revSeq=0;
+async function reverse(lat,lng){
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=ja&lat=${lat.toFixed(6)}&lon=${lng.toFixed(6)}`);const j=await r.json();const a=j&&j.address||{};
+    const t=[a.province||a.state,a.city||a.town||a.village,a.city_district||a.suburb,a.quarter||a.neighbourhood,a.road].filter(Boolean).join('');
+    return clean(t||String(j.display_name||'').split(',').map(x=>x.trim()).reverse().filter(x=>!/^\d{3}-?\d{4}$|日本/.test(x)).join(''),80)}catch(e){return''}
+}
+map.on('click',async e=>{if(!adding)return;adding=false;$('banner').style.display='none';map.getContainer().style.cursor='';
+  pending=e.latlng;$('fStore').reset();
+  if(!inJapan(pending.lat,pending.lng)){toast('日本国内の場所を選んでね');return}
+  $('sPos').textContent=`選んだ場所：緯度 ${pending.lat.toFixed(5)} / 経度 ${pending.lng.toFixed(5)}（地図の拡大を最大近くにすると正確です）`;
+  const nb=nearBy(pending.lat,pending.lng,50);const w=$('sWarn');
+  w.hidden=!nb.length;w.textContent=nb.length?'⚠ 50m以内にすでに登録があります：'+nb.map(s=>s.name).join('、')+'。同じお店なら、そちらにガチャを追加してね。':'';
+  showModal('mStore',true);$('sName').focus();
+  const my=++revSeq;$('sAddr').placeholder='住所を自動で調べています…';
+  const ad=await reverse(pending.lat,pending.lng);if(my!==revSeq)return;
+  if(ad&&!$('sAddr').value)$('sAddr').value=ad;$('sAddr').placeholder='例：エスカレーター横';
+});
+$('fStore').addEventListener('submit',e=>{e.preventDefault();
+  const name=clean($('sName').value,60);if(name.length<2)return toast('店名を2文字以上で入れてね');
+  if(stores.some(s=>normName(s.name)===normName(name)&&map.distance(pending,[s.lat,s.lng])<300))return toast('同じ名前のお店がすぐ近くにあります');
+  if(stores.length>=5000)return toast('登録できる数の上限です');
+  const s={id:safeId('','s'),name,type:has(TYPES,$('sType').value)?$('sType').value:'shop',hours:clean($('sHours').value,40),addr:clean($('sAddr').value,80),lat:+pending.lat.toFixed(6),lng:+pending.lng.toFixed(6),machines:[]};
   stores.push(s);save();showModal('mStore',false);open(s.id);toast('お店を追加しました')});
-$('fMach').addEventListener('submit',e=>{e.preventDefault();const s=stores.find(x=>x.id===sel);
-  s.machines.push({id:'m'+Date.now(),title:$('mTitle').value.trim(),price:+$('mPrice').value||0,stock:$('mStock').value,t:Date.now()});save();showModal('mMach',false);render();toast('ガチャを追加しました')});
+$('fMach').addEventListener('submit',e=>{e.preventDefault();const s=stores.find(x=>x.id===sel);if(!s)return;
+  const title=clean($('mTitle').value,60);if(!title)return toast('ガチャの名前を入れてね');
+  if(s.machines.some(m=>normName(m.title)===normName(title)))return toast('同じ名前のガチャがもう登録されています');
+  if(s.machines.length>=300)return toast('1店舗に登録できる数の上限です');
+  const st=$('mStock').value;
+  s.machines.push({id:safeId('','m'),title,price:Math.min(5000,Math.max(0,Math.round(+$('mPrice').value||0))),stock:has(STOCK,st)?st:'many',t:Date.now()});save();showModal('mMach',false);render();toast('ガチャを追加しました')});
+
+/* ---- OpenStreetMap からガチャ店を探して登録（利用OKのデータ・出典表示つき） ---- */
+let cands=[];
+function guessType(t){
+  if(t.leisure==='amusement_arcade')return'game';
+  if(t.amenity==='vending_machine')return'station';
+  if(/mall|department_store/.test(t.shop||''))return'mall';
+  return'shop';
+}
+async function osmScan(){
+  if(map.getZoom()<13){toast('もう少し地図を拡大してから押してね');return}
+  const b=map.getBounds(),bb=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()].map(v=>v.toFixed(5)).join(',');
+  const ql=`[out:json][timeout:25];(nwr["name"~"ガシャポン|ガチャ|カプセルトイ|カプセル トイ|gashapon|gachapon|capsule toy",i](${bb});nwr["vending"~"toys|capsule"](${bb}););out center tags 300;`;
+  $('oList').innerHTML='<div class="empty meta">探しています…</div>';$('oAdd').disabled=true;showModal('mOsm',true);
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(ql)});
+    if(!r.ok)throw new Error(r.status);
+    const j=await r.json();
+    cands=(Array.isArray(j.elements)?j.elements:[]).map(e=>{
+      const t=e.tags||{},lat=+(e.lat??e.center?.lat),lng=+(e.lon??e.center?.lon);
+      const name=clean(t.name||t.brand||t.operator||(t.vending?'カプセルトイ自販機':''),60);
+      const addr=clean([t['addr:province'],t['addr:city'],t['addr:quarter'],t['addr:neighbourhood'],t['addr:block_number'],t['addr:housenumber']].filter(Boolean).join(''),80);
+      const osm=`${e.type}/${e.id}`;
+      return{name,lat,lng,addr,hours:clean(t.opening_hours,40),type:guessType(t),osm,
+        dup:stores.some(s=>s.osm===osm)?'登録済み':nearBy(lat,lng,40).length?'近くに登録あり':''};
+    }).filter(c=>c.name&&isFinite(c.lat)&&inJapan(c.lat,c.lng)&&/^(node|way|relation)\/\d+$/.test(c.osm));
+    $('oList').innerHTML=cands.length?cands.map((c,i)=>`<label class="sg" style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" data-ci="${i}" ${c.dup?'':'checked'} ${c.dup==='登録済み'?'disabled':''} style="width:22px;height:22px;flex:none;margin-top:2px"><span>${esc(c.name)}<small>${esc(TYPES[c.type])}${c.addr?'・'+esc(c.addr):''}${c.dup?'・<b>'+esc(c.dup)+'</b>':''}</small></span></label>`).join('')
+      :'<div class="empty meta">この範囲では見つかりませんでした。地図を動かして、もう一度試してね。見つからないお店は＋ボタンで登録できます。</div>';
+    $('oAdd').disabled=!cands.length;
+  }catch(err){$('oList').innerHTML='<div class="empty meta">地図データにつながりませんでした。少し時間をおいて試してね。</div>'}
+}
+$('oAdd').addEventListener('click',()=>{
+  let n=0;
+  document.querySelectorAll('#oList input[data-ci]:checked:not(:disabled)').forEach(cb=>{
+    const c=cands[+cb.dataset.ci];if(!c||stores.some(s=>s.osm===c.osm)||stores.length>=5000)return;
+    stores.push({id:safeId('','s'),name:c.name,type:c.type,lat:+c.lat.toFixed(6),lng:+c.lng.toFixed(6),hours:c.hours,addr:c.addr,osm:c.osm,machines:[]});n++;
+  });
+  save();showModal('mOsm',false);sel=null;render();toast(n?n+'件のお店を登録しました':'登録するお店が選ばれていません');
+});
 /* ---- 現在地：最大15秒間 測り続けて、いちばん誤差の小さい値を使う ---- */
 function stopWatch(){if(watchId!=null)navigator.geolocation.clearWatch(watchId);watchId=null;clearTimeout(stopTimer);$('loc').classList.remove('busy');$('banner').style.display='none'}
 function showMe(c,first){
@@ -400,7 +506,11 @@ $('gPick').addEventListener('click',()=>{showModal('mGeo',false);pickMe=true;con
 map.on('click',e=>{if(!pickMe)return;pickMe=false;$('banner').style.display='none';place=null;if(placeMark){placeMark.remove();placeMark=null}
   showMe({latitude:e.latlng.lat,longitude:e.latlng.lng,accuracy:30},false);toast('ここを現在地にしました')});
 $('dCopy').addEventListener('click',()=>{navigator.clipboard?.writeText($('dTxt').value).then(()=>toast('コピーしました'),()=>{$('dTxt').select();toast('選択したのでコピーしてね')})});
-$('dLoad').addEventListener('click',()=>{try{const d=JSON.parse($('dTxt').value);if(!Array.isArray(d))throw 0;stores=d;sel=null;save();showModal('mData',false);render();toast('読み込みました')}catch(e){toast('データの形が正しくありません')}});
+$('dLoad').addEventListener('click',()=>{try{
+  const txt=$('dTxt').value;if(txt.length>3e6)throw 0;
+  const d=JSON.parse(txt),v=valid(d);if(!v||(!v.length&&d.length))throw 0;
+  const skip=d.length-v.length;stores=v;sel=null;save();showModal('mData',false);render();
+  toast('読み込みました'+(skip>0?`（正しくない${skip}件は除外）`:''))}catch(e){toast('データの形が正しくありません')}});
 /* ---- スマホ：一覧パネルの大きさ切り替え（タップ・上下スワイプ） ---- */
 const P=$('panel');
 function setSize(c){P.classList.remove('big','min');if(c)P.classList.add(c);setTimeout(()=>map.invalidateSize(),250)}
