@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'sha256-U9wnAV2O2vH7m7HFrNzPwqj4r/mxuRmsadyucy4qwz8='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'sha256-HuAUw2k0BqJxwVbg0yGZ09EtazJBLhxHq4kzVwGyIKQ='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -258,6 +258,7 @@ function visible(){
     if(fstock&&!['many','few'].includes(status(s)))return false;
     if(ffresh&&Date.now()-last(s)>24*H)return false;
     if(q&&!s.name.toLowerCase().includes(q)&&!hits(s).length)return false;
+    if(!q&&radius&&ref()&&dist(s)>radius)return false;
     return true;
   }).sort((a,b)=>ref()?dist(a)-dist(b):last(b)-last(a));
 }
@@ -271,25 +272,46 @@ const gsi=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'
 const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'&copy; OpenStreetMap contributors'});
 L.control.layers({'地理院地図':gsi,'OpenStreetMap':osm},null,{position:'topright'}).addTo(map);
 const layer=L.layerGroup().addTo(map);let meMark=null;
+/* ---- 近くの範囲（半径）・徒歩の目安・未登録のガチャ店 ---- */
+const RADII=[[300,'300m'],[500,'500m'],[1000,'1km'],[3000,'3km'],[0,'範囲なし']];
+let radius=1000,rCircle=null,nearC=[],nearKey='',meAcc=null,followId=null,lastScanAt=null;
+const candLayer=L.layerGroup().addTo(map);
+function walk(d){return Math.max(1,Math.round(d*1.3/80))}
+function candIcon(){return L.divIcon({className:'pin',iconSize:[26,32],iconAnchor:[13,32],html:'<svg width="26" height="32" viewBox="0 0 34 42"><path d="M17 41 10 30h14z" fill="#6b6b70"/><rect x="5" y="2" width="24" height="30" rx="12" fill="#fff" stroke="#6b6b70" stroke-width="2.5" stroke-dasharray="4 3"/><text x="17" y="22" font-size="14" text-anchor="middle" fill="#6b6b70" font-weight="700">?</text></svg>'})}
+function radiusBtns(){
+  if(!ref())return'';
+  return'<span style="flex:none;align-self:center;font-size:13px;opacity:.9">半径</span>'+RADII.map(([r,l])=>`<button class="chip ${radius===r?'on':''}" data-r="${r}">${l}</button>`).join('');
+}
 
 function chips(){
-  const c=[['all','すべて'],...Object.entries(TYPES)].map(([k,v])=>`<button class="chip ${ftype===k?'on':''}" data-t="${k}">${v}</button>`).join('');
+  const c=radiusBtns()+[['all','すべて'],...Object.entries(TYPES)].map(([k,v])=>`<button class="chip ${ftype===k?'on':''}" data-t="${k}">${v}</button>`).join('');
   $('chips').innerHTML=c+`<button class="chip ${fstock?'on':''}" data-f="stock">在庫ありだけ</button><button class="chip ${ffresh?'on':''}" data-f="fresh">24時間以内に更新</button><button class="chip" data-f="osm">この範囲のガチャ店を探す</button><button class="chip" data-f="data">データ</button>`;
 }
 function render(){
   chips();const vs=visible();layer.clearLayers();
   vs.forEach(s=>L.marker([s.lat,s.lng],{icon:icon(status(s),sel===s.id),zIndexOffset:sel===s.id?1000:0}).on('click',()=>open(s.id)).addTo(layer));
+  const r=ref();
+  if(r&&radius){if(!rCircle)rCircle=L.circle(r,{radius,color:'#e63946',weight:2,dashArray:'6 6',fill:false,interactive:false}).addTo(map);else rCircle.setLatLng(r).setRadius(radius)}
+  else if(rCircle){rCircle.remove();rCircle=null}
+  candLayer.clearLayers();
+  nearCands().forEach(c=>L.marker([c.lat,c.lng],{icon:candIcon(),title:c.name}).on('click',()=>showCand(c.osm)).addTo(candLayer));
   const s=stores.find(x=>x.id===sel);
   s?detail(s):list(vs);
 }
 function list(vs){
   $('panel').classList.remove('big','min');
-  const ttl=place?esc(place.name)+' の近く':q?'「'+esc(q)+'」の結果':me?'現在地の近く':'近くのガチャ';
+  const rl=radius&&ref()&&!q?`（半径${radius<1000?radius+'m':radius/1000+'km'}）`:'';
+  const ttl=(place?esc(place.name)+' の近く':q?'「'+esc(q)+'」の結果':me?'現在地の近く':'近くのガチャ')+rl;
   $('ph').innerHTML=`<h2>${ttl}　<span class="meta">${vs.length}件</span></h2>${place?'<button class="icon" id="clrP" aria-label="場所の指定を解除">✕</button>':''}`;
-  $('pb').innerHTML=vs.length?vs.map(s=>{const h=hits(s);return `<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="dot ${status(s)}"></span><div><b>${esc(s.name)}</b>
-   <div class="meta">${esc(TYPES[s.type]||'')}・${s.machines.length}台${ref()?'・'+fmtD(dist(s)):''}${last(s)?'・更新 '+ago(last(s)):''}</div>
+  const accNote=me&&!place&&meAcc>80?`<div class="warn" style="margin:10px 14px">現在地の誤差が約${Math.round(meAcc)}mあります。距離は目安として見てね（屋外・Wi-Fiオンで正確になります）。</div>`:'';
+  const cs=q?[]:nearCands();
+  $('pb').innerHTML=accNote+(vs.length?vs.map(s=>{const h=hits(s),d=dist(s);return `<div class="item" tabindex="0" data-id="${esc(s.id)}"><span class="dot ${status(s)}"></span><div><b>${esc(s.name)}</b>
+   <div class="meta">${d!=null?`<b style="display:inline;font-size:14px">${fmtD(d)}</b>・徒歩約${walk(d)}分・`:''}${esc(TYPES[s.type]||'')}・${s.machines.length}台${last(s)?'・更新 '+ago(last(s)):''}</div>
    ${h.map(m=>`<div class="hit"><span class="dot ${m.stock}" style="display:inline-block;width:9px;height:9px;margin:0 4px 0 0"></span>${esc(m.title)}（${STOCK[m.stock]}）</div>`).join('')}</div></div>`}).join('')
-   :`<div class="empty">条件に合うお店がありません。<br>絞り込みをゆるめるか、＋ボタンでお店を追加してね。</div>`;
+   :`<div class="empty">${ref()&&radius?'この範囲に登録済みのお店はありません。<br>半径を広げるか、下の「まだ登録されていないお店」から追加してね。':'条件に合うお店がありません。<br>絞り込みをゆるめるか、＋ボタンでお店を追加してね。'}</div>`)
+   +(cs.length?`<h4 style="margin:14px 14px 4px;font-size:14px">まだ登録されていない近くのお店 <span class="meta">${cs.length}件・OpenStreetMapより</span></h4>`+cs.map(c=>{const d=ref()?map.distance(ref(),[c.lat,c.lng]):null;return`<div class="item" id="c-${esc(c.osm.replace('/','-'))}"><span class="dot none" style="border:2px dashed #9aa0a6;background:none"></span><div style="flex:1"><b>${esc(c.name)}</b>
+   <div class="meta">${d!=null?fmtD(d)+'・徒歩約'+walk(d)+'分・':''}${esc(TYPES[c.type])}${c.addr?'・'+esc(c.addr):''}</div></div><button class="btn b-line" data-reg="${esc(c.osm)}" style="flex:none;align-self:center">登録</button></div>`}).join('')
+   +'<p class="meta" style="padding:0 14px">場所データ © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a></p>':'');
 }
 function detail(s){
   $('panel').classList.remove('min');$('panel').classList.add('big');
@@ -314,6 +336,7 @@ $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)
   if(b.dataset.f==='fresh')ffresh=!ffresh;
   if(b.dataset.f==='data'){$('dTxt').value=JSON.stringify(stores);showModal('mData',true);return}
   if(b.dataset.f==='osm'){osmScan();return}
+  if(b.dataset.r!=null){radius=+b.dataset.r;sel=null;render();fitRadius();nearScan();return}
   sel=null;render()});
 /* ---- 場所検索：駅・施設は OpenStreetMap(Nominatim)、住所は国土地理院 ---- */
 let found=[];
@@ -351,9 +374,9 @@ function goPlace(p){
   if(placeMark)placeMark.remove();
   placeMark=L.marker([p.lat,p.lng],{zIndexOffset:2000}).bindTooltip(p.name,{permanent:true,direction:'top',offset:[-15,-12]}).addTo(map);
   map.setView([p.lat,p.lng],p.kind==='住所'&&!/[0-9０-９]/.test(p.name)?14:16);
-  q='';render();toast(p.name+' の近くを表示');
+  q='';$('q').value='';stopFollow();render();fitRadius();nearScan();toast(p.name+' の近くを表示');
 }
-function clearPlace(){place=null;if(placeMark){placeMark.remove();placeMark=null}render()}
+function clearPlace(){place=null;if(placeMark){placeMark.remove();placeMark=null}render();if(me){nearScan();startFollow()}}
 $('q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();sel=null;render();clearTimeout(geoTimer);geoTimer=setTimeout(runGeo,700)});
 $('q').addEventListener('focus',()=>{if($('q').value.trim().length>=2&&found.length)$('sugg').classList.add('on')});
 $('sf').addEventListener('submit',e=>{e.preventDefault();clearTimeout(geoTimer);runGeo()});
@@ -365,7 +388,8 @@ $('sugg').addEventListener('click',e=>{const b=e.target.closest('.sg');if(!b)ret
 document.addEventListener('click',e=>{if(!e.target.closest('#sugg,#sf'))closeSugg()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSugg()});
 $('pb').addEventListener('click',e=>{
-  const it=e.target.closest('.item');if(it)return open(it.dataset.id);
+  const rg=e.target.closest('[data-reg]');if(rg)return regCand(rg.dataset.reg);
+  const it=e.target.closest('.item[data-id]');if(it)return open(it.dataset.id);
   const rb=e.target.closest('[data-st]');
   if(rb){const s=stores.find(x=>x.id===sel),m=s.machines.find(x=>x.id===rb.closest('.mach').dataset.m);m.stock=rb.dataset.st;m.t=Date.now();save();render();toast('報告ありがとう！');return}
   if(e.target.id==='addM'){$('fMach').reset();showModal('mMach',true)}
@@ -416,7 +440,7 @@ $('fMach').addEventListener('submit',e=>{e.preventDefault();const s=stores.find(
 let cands=[];
 function guessType(t){
   if(t.leisure==='amusement_arcade')return'game';
-  if(t.amenity==='vending_machine')return'station';
+  if(t.amenity==='vending_machine'||t.vending)return'station';
   if(/mall|department_store/.test(t.shop||''))return'mall';
   return'shop';
 }
@@ -452,20 +476,66 @@ $('oAdd').addEventListener('click',()=>{
 });
 /* ---- 現在地：最大15秒間 測り続けて、いちばん誤差の小さい値を使う ---- */
 function stopWatch(){if(watchId!=null)navigator.geolocation.clearWatch(watchId);watchId=null;clearTimeout(stopTimer);$('loc').classList.remove('busy');$('banner').style.display='none'}
-function showMe(c,first){
-  me=L.latLng(c.latitude,c.longitude);
+function fitRadius(){const r=ref();if(r&&radius)map.fitBounds(r.toBounds(radius*2),{padding:[20,20],maxZoom:18})}
+function nearCands(){
+  const r=ref();if(!r)return[];
+  return nearC.filter(c=>!stores.some(s=>s.osm===c.osm||map.distance([s.lat,s.lng],[c.lat,c.lng])<40))
+    .filter(c=>!radius||map.distance(r,[c.lat,c.lng])<=radius).sort((a,b)=>map.distance(r,[a.lat,a.lng])-map.distance(r,[b.lat,b.lng]));
+}
+async function nearScan(){
+  const r=ref();if(!r)return;
+  const R=Math.min(radius||3000,3000),key=r.lat.toFixed(3)+','+r.lng.toFixed(3)+','+R;
+  if(key===nearKey)return;nearKey=key;lastScanAt=r;
+  const a=`(around:${R},${r.lat.toFixed(6)},${r.lng.toFixed(6)})`;
+  const ql=`[out:json][timeout:20];(nwr["name"~"ガシャポン|ガチャ|カプセルトイ|カプセル トイ|gashapon|gachapon|capsule toy",i]${a};nwr["vending"~"toys|capsule"]${a};);out center tags 200;`;
+  try{
+    const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(ql)});
+    if(!res.ok)throw 0;const j=await res.json();if(key!==nearKey)return;
+    nearC=(Array.isArray(j.elements)?j.elements:[]).map(e=>{const t=e.tags||{},lat=+(e.lat??e.center?.lat),lng=+(e.lon??e.center?.lon);
+      return{name:clean(t.name||t.brand||t.operator||(t.vending?'カプセルトイ自販機':''),60),lat,lng,
+        addr:clean([t['addr:province'],t['addr:city'],t['addr:quarter'],t['addr:neighbourhood'],t['addr:block_number'],t['addr:housenumber']].filter(Boolean).join(''),80),
+        hours:clean(t.opening_hours,40),type:guessType(t),osm:`${e.type}/${e.id}`}})
+      .filter(c=>c.name&&isFinite(c.lat)&&isFinite(c.lng)&&inJapan(c.lat,c.lng)&&/^(node|way|relation)\/\d+$/.test(c.osm));
+    if(!sel)render();
+  }catch(e){nearKey=''}
+}
+function showCand(osm){setSize('');sel=null;render();const el=document.getElementById('c-'+osm.replace('/','-'));if(el){el.scrollIntoView({block:'center'});el.style.background='#fff6d9'}}
+function regCand(osm){
+  const c=nearC.find(x=>x.osm===osm);if(!c||stores.some(s=>s.osm===osm))return;
+  if(stores.length>=5000)return toast('登録できる数の上限です');
+  const s={id:safeId('','s'),name:c.name,type:c.type,lat:+c.lat.toFixed(6),lng:+c.lng.toFixed(6),hours:c.hours,addr:c.addr,osm:c.osm,machines:[]};
+  stores.push(s);save();open(s.id);toast('お店を登録しました。ガチャを追加してね');
+}
+/* 歩いている間も現在地を追いかけて、近い順を更新する */
+function startFollow(){
+  stopFollow();if(!navigator.geolocation)return;
+  followId=navigator.geolocation.watchPosition(p=>{const c=p.coords;if(place||!me)return;
+    if(c.accuracy>Math.max(100,(meAcc||0)*1.5))return;
+    const moved=map.distance(me,[c.latitude,c.longitude]);
+    if(moved<15&&c.accuracy>=meAcc)return;
+    showMe({latitude:c.latitude,longitude:c.longitude,accuracy:c.accuracy},false,true);
+    if(!lastScanAt||map.distance(lastScanAt,me)>Math.max(200,(radius||1000)/3))nearScan();
+  },()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:30000});
+}
+function stopFollow(){if(followId!=null)navigator.geolocation.clearWatch(followId);followId=null}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopFollow();else if(me&&!place&&watchId==null)startFollow()});
+function showMe(c,first,quiet){
+  me=L.latLng(c.latitude,c.longitude);meAcc=c.accuracy;
   if(!meMark)meMark=L.circleMarker(me,{radius:9,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map);else meMark.setLatLng(me);
   if(!accCircle)accCircle=L.circle(me,{radius:c.accuracy,color:'#1a73e8',weight:1,fillOpacity:.12}).addTo(map);else accCircle.setLatLng(me).setRadius(c.accuracy);
-  if(first)map.setView(me,c.accuracy>1000?13:c.accuracy>200?15:17);else map.panTo(me);
-  render();
+  if(first)map.setView(me,c.accuracy>1000?13:c.accuracy>200?15:17);else if(!quiet)map.panTo(me);
+  if(sel)return;render();
 }
 $('loc').addEventListener('click',()=>{
   if(!navigator.geolocation)return geoHelp(null);
   if(!window.isSecureContext)return geoHelp({code:'insecure'});
-  stopWatch();place=null;if(placeMark){placeMark.remove();placeMark=null}
+  stopWatch();stopFollow();place=null;if(placeMark){placeMark.remove();placeMark=null}
   let best=null,first=true;
   const bn=$('banner');bn.textContent='現在地を測っています…';bn.style.display='block';$('loc').classList.add('busy');
-  const done=()=>{stopWatch();if(best)toast('現在地 誤差 約'+Math.round(best.accuracy)+'m'+(best.accuracy>100?'（屋外やWi-FiオンでOK）':''));};
+  const done=()=>{stopWatch();if(!best)return;
+    if(radius&&best.accuracy>radius*0.6)radius=RADII.find(([r])=>r&&r>=best.accuracy*2)?.[0]||3000;
+    sel=null;render();fitRadius();nearScan();startFollow();
+    toast('現在地 誤差 約'+Math.round(best.accuracy)+'m・近い順に表示'+(best.accuracy>100?'（屋外やWi-Fiオンで正確に）':''));};
   stopTimer=setTimeout(()=>{if(!best){stopWatch();toast('現在地を取得できませんでした')}else done()},15000);
   watchId=navigator.geolocation.watchPosition(p=>{
     const c=p.coords;
@@ -504,7 +574,7 @@ async function geoHelp(err){
 let pickMe=false;
 $('gPick').addEventListener('click',()=>{showModal('mGeo',false);pickMe=true;const bn=$('banner');bn.textContent='いまいる場所を地図でタップしてね';bn.style.display='block'});
 map.on('click',e=>{if(!pickMe)return;pickMe=false;$('banner').style.display='none';place=null;if(placeMark){placeMark.remove();placeMark=null}
-  showMe({latitude:e.latlng.lat,longitude:e.latlng.lng,accuracy:30},false);toast('ここを現在地にしました')});
+  stopFollow();showMe({latitude:e.latlng.lat,longitude:e.latlng.lng,accuracy:30},false);nearScan();toast('ここを現在地にしました')});
 $('dCopy').addEventListener('click',()=>{navigator.clipboard?.writeText($('dTxt').value).then(()=>toast('コピーしました'),()=>{$('dTxt').select();toast('選択したのでコピーしてね')})});
 $('dLoad').addEventListener('click',()=>{try{
   const txt=$('dTxt').value;if(txt.length>3e6)throw 0;
