@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 40
     steps:
       # 外部のアクションは使わず、git だけで取得（安全のため）
       - name: Get files
@@ -20,9 +20,17 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: git clone --depth 1 --branch gh-pages "https://x-access-token:${TOKEN}@github.com/${REPO}.git" site
-      - name: Build list from OpenStreetMap
-        working-directory: site
-        run: python3 gacha-map/data/build_facilities.py
+      - name: Install osmium
+        run: sudo apt-get update -q && sudo apt-get install -y -q osmium-tool
+      - name: Download Japan map data (Geofabrik / OpenStreetMap)
+        run: curl -fsSL --retry 3 -o japan.osm.pbf https://download.geofabrik.de/asia/japan-latest.osm.pbf && ls -lh japan.osm.pbf
+      - name: Pick out stores
+        run: |
+          osmium tags-filter japan.osm.pbf nwr/shop=chemist,mall,department_store,supermarket -o sel.osm.pbf
+          osmium export sel.osm.pbf -f geojsonseq -a type,id --format-option=print_record_separator=false -o sel.geojsonseq
+          wc -l sel.geojsonseq
+      - name: Build list
+        run: python3 site/gacha-map/data/build_facilities.py sel.geojsonseq
       - name: Save
         working-directory: site
         run: |
