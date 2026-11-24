@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-wwrw8K+e+jHWWMVkZBWABrIKY5cyLzG8W2K1inwQ5IA='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-PFzSCVka1lDUtKR51aWewQ/qpDHC3pC+slvgkd6GBuo='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -309,11 +309,29 @@ function icon(st,on){const s=on?44:34;return L.divIcon({className:'pin',iconSize
 
 const map=L.map('map',{zoomControl:false}).setView([34.68,135.505],13);
 L.control.zoom({position:'topright'}).addTo(map);
-const voy=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'}).addTo(map);
-const gsi=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'});
-const pale=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'});
-const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'&copy; OpenStreetMap contributors'});
-L.control.layers({'かんたん地図':voy,'地理院地図':gsi,'地理院 淡色':pale,'OpenStreetMap':osm},null,{position:'topright'}).addTo(map);
+/* ---- 地図：無料で見やすい地図。表示できないときは自動で次の地図に切り替える ---- */
+const GSIA='<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>';
+const BASES=[
+  ['見やすい地図（淡色）',L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:GSIA})],
+  ['くわしい地図',L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:GSIA})],
+  ['OpenStreetMap',L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'})],
+  ['カラフル地図',L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'})]
+];
+let baseIdx=0,tileOk=0,tileNg=0;
+try{const v=+localStorage.getItem('gachamap-base');if(v>=0&&v<BASES.length)baseIdx=v}catch(e){}
+BASES.forEach(([n,ly],i)=>{
+  ly.on('tileload',()=>{if(i===baseIdx)tileOk++});
+  ly.on('tileerror',()=>{if(i!==baseIdx)return;tileNg++;
+    if(tileOk===0&&tileNg>=4&&baseIdx<BASES.length-1){useBase(baseIdx+1,true)}});
+});
+function useBase(i,auto){
+  BASES[baseIdx][1].remove();baseIdx=i;tileOk=0;tileNg=0;BASES[i][1].addTo(map);
+  try{localStorage.setItem('gachamap-base',auto?'0':String(i))}catch(e){}
+  if(auto)toast('地図を「'+BASES[i][0]+'」に切り替えました');
+}
+BASES[baseIdx][1].addTo(map);
+L.control.layers(Object.fromEntries(BASES.map(([n,ly])=>[n,ly])),null,{position:'topright'}).addTo(map);
+map.on('baselayerchange',e=>{const i=BASES.findIndex(b=>b[1]===e.layer);if(i>=0&&i!==baseIdx){baseIdx=i;tileOk=0;tileNg=0;try{localStorage.setItem('gachamap-base',String(i))}catch(x){}}});
 const layer=L.layerGroup().addTo(map);let meMark=null;
 /* ---- 近くの範囲（半径）・徒歩の目安・未登録のガチャ店 ---- */
 const RADII=[[300,'300m'],[500,'500m'],[1000,'1km'],[3000,'3km'],[0,'範囲なし']];
