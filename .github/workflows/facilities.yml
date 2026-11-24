@@ -1,4 +1,4 @@
-name: 未登録店データの更新（全国のイオン・ドラッグストア）
+name: 未登録店データの更新（全国のイオン・ドラッグストア・本屋・ガチャ屋）
 # gacha-map/data/refresh.txt を書き換えて push すると実行される
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
         run: curl -fsSL --retry 3 -o japan.osm.pbf https://download.geofabrik.de/asia/japan-latest.osm.pbf && ls -lh japan.osm.pbf
       - name: Pick out stores
         run: |
-          osmium tags-filter japan.osm.pbf nwr/shop=chemist,mall,department_store,supermarket -o sel.osm.pbf
+          osmium tags-filter japan.osm.pbf nwr/shop nwr/vending -o sel.osm.pbf
           osmium export sel.osm.pbf -f geojsonseq -a type,id --format-option=print_record_separator=false -o sel.geojsonseq
           wc -l sel.geojsonseq
       - name: Build list

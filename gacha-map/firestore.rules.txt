@@ -18,13 +18,18 @@ service cloud.firestore {
       return v is string && v.size() <= maxLen;
     }
 
+    // URL・メールアドレス・電話番号は名前に入れられない
+    function safeName(v) {
+      return !v.matches('.*(https?:|www[.]|@|0[0-9]{1,4}-[0-9]{1,4}-[0-9]{3,4}|0[789]0[0-9]{8}).*');
+    }
+
     function validStore(d) {
       return d.keys().hasOnly(['name','type','lat','lng','hours','addr','osm','machines',
                                'by','createdAt','updatedAt','updatedBy'])
         && d.keys().hasAll(['name','type','lat','lng','hours','addr','machines',
                             'by','createdAt','updatedAt','updatedBy'])
-        && str(d.name, 60) && d.name.size() >= 2
-        && d.type in ['shop','game','mall','super','drug','station']
+        && str(d.name, 60) && d.name.size() >= 2 && safeName(d.name)
+        && d.type in ['shop','game','mall','super','drug','books','station']
         && d.lat is number && d.lat >= 20 && d.lat <= 46
         && d.lng is number && d.lng >= 122 && d.lng <= 154
         && str(d.hours, 40) && str(d.addr, 80)
@@ -66,8 +71,9 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['name','updatedAt'])
         && str(request.resource.data.name, 20) && request.resource.data.name.size() >= 1
         && !request.resource.data.name.matches('.*[<>@].*')
+        && safeName(request.resource.data.name)
         && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // 在庫報告の記録（ポイントの元）：同じお店で1人1日1回まで。本人だけ見られる。消せない。
@@ -137,6 +143,20 @@ service cloud.firestore {
         && rid == request.auth.uid + '_' + request.resource.data.pid
         && get(/databases/$(database)/documents/photos/$(request.resource.data.pid)).data.storeId == request.resource.data.storeId;
       allow update, delete: if false;
+    }
+
+    // お店の通報：1人1店1回・自分が登録したお店は不可・取り消しは本人だけ。3件で画面から非表示
+    match /storeReports/{rid} {
+      allow read: if true;
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly(['uid','sid','reason','at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.at == request.time
+        && request.resource.data.reason in ['closed','wrong','bad']
+        && rid == request.auth.uid + '_' + request.resource.data.sid
+        && get(/databases/$(database)/documents/stores/$(request.resource.data.sid)).data.by != request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if false;
     }
 
     // それ以外の場所は、だれも読み書きできない

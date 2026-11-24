@@ -1,11 +1,12 @@
-"""全国のイオン・イオンモール・ドラッグストアの一覧 facilities.json を作る。
+"""全国のイオン・イオンモール・ドラッグストア・本屋・ガチャガチャ屋さんの一覧 facilities.json を作る。
 GitHub Actions で、Geofabrik の日本の地図データ（OpenStreetMap）から osmium で取り出したものを読む。
 データ: (c) OpenStreetMap contributors, ODbL 1.0"""
 import json, re, sys, datetime, os
 
-MIN_COUNT = {"aeon": 100, "drug": 3000}   # これより少ないときは失敗とみなし、古いデータを残す
+MIN_COUNT = {"aeon": 100, "drug": 3000, "books": 1000, "gacha": 50}   # これより少ないときは失敗とみなし、古いデータを残す
 CTRL = re.compile(r"[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩﻿]")
 AEON = re.compile(r"^(イオン|AEON)")
+GACHA = re.compile(r"ガチャ|ガシャ|カプセルトイ|カプセル トイ|gashapon|gachapon|gacha|capsule ?toy", re.I)
 
 
 def clean(v, n):
@@ -28,7 +29,7 @@ def center(g):
 
 
 src = sys.argv[1]
-items, seen, counts = [], set(), {"aeon": 0, "drug": 0}
+items, seen, counts = [], set(), {"aeon": 0, "drug": 0, "books": 0, "gacha": 0}
 with open(src, encoding="utf-8") as f:
     for line in f:
         line = line.strip().lstrip("\x1e")
@@ -42,9 +43,16 @@ with open(src, encoding="utf-8") as f:
             continue
         name = clean(t.get("name") or t.get("brand"), 60)
         shop = t.get("shop", "")
+        vend = str(t.get("vending", ""))
+        if not name and re.search(r"toys|capsule", vend):
+            name = "カプセルトイ自販機"
         if not name:
             continue
-        if shop == "chemist":
+        if GACHA.search(name) or GACHA.search(str(t.get("brand", ""))) or re.search(r"toys|capsule", vend):
+            kind, grp = "gacha", "gacha"
+        elif shop == "books":
+            kind, grp = "books", "books"
+        elif shop == "chemist":
             kind, grp = "chemist", "drug"
         elif shop in ("mall", "department_store", "supermarket") and (AEON.match(name) or AEON.match(str(t.get("brand", "")))):
             kind = "aeonmall" if re.search(r"モール|MALL|Mall", name) or shop == "mall" else "aeon"
