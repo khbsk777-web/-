@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-xswEjki7RQE7QFhsfU5P/YHIktUcSvzweHA/ZEA8ZgY='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-E8aAZlbFlSpUZI938rE73QIPPZ492JAQ9OU0Q7YcBkg='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,6 +46,10 @@ header{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000002e;padding:c
 .acct{position:relative}.acct.in::after{content:"";position:absolute;right:8px;top:8px;width:10px;height:10px;border-radius:50%;background:#1e8e3e;border:2px solid #fff}
 .tabs{display:flex;gap:6px;margin:0 0 6px}.tabs button{flex:1;min-height:44px;border:0;border-bottom:3px solid var(--line);background:none;font:inherit;font-weight:800;color:var(--sub);cursor:pointer}.tabs button.on{border-color:var(--red);color:var(--ink)}
 .linkbtn{border:0;background:none;color:#1a73e8;font:inherit;font-size:14px;padding:10px 0;cursor:pointer;min-height:44px}
+.fpin{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#fff;border:2.5px solid #1a73e8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px #0004}
+.fpin span{transform:rotate(45deg);font-size:15px;line-height:1}
+.leaflet-popup-content{font:14px/1.5 "M PLUS Rounded 1c",-apple-system,"Hiragino Sans",sans-serif;margin:12px 14px}
+.leaflet-popup-content .btn{margin:8px 0 6px}
 .soc{padding:4px 14px 18px;border-top:1px solid var(--line)}
 .soc h4{margin:16px 0 4px;font-size:16px}
 .likebtn{border:1px solid #dadce0;background:#fff;border-radius:999px;font:inherit;font-weight:800;min-height:44px;padding:0 16px;cursor:pointer;color:var(--ink);margin-top:12px}
@@ -161,7 +165,7 @@ header{position:relative}
   <div class="mapwrap">
   <div id="map"></div>
   <div class="banner" id="banner">地図をタップして店舗の場所を選んでね</div>
-  <div class="legend"><span><i class="many"></i>在庫あり</span><span><i class="few"></i>残りわずか</span><span><i class="out"></i>売切れ</span></div>
+  <div class="legend"><span><i class="many"></i>在庫あり</span><span><i class="few"></i>残りわずか</span><span><i class="out"></i>売切れ</span><span id="facHint">📍未登録</span></div>
   <div class="fab">
     <button id="loc" aria-label="現在地">📍</button>
     <button id="add" class="add" aria-label="店舗を追加">＋</button>
@@ -253,7 +257,7 @@ header{position:relative}
 <script>
 {
 const KEY='gachamap-v1';
-const TYPES={shop:'ガチャ専門店',game:'ゲームセンター',mall:'商業施設',station:'駅・その他'};
+const TYPES={shop:'ガチャ専門店',game:'ゲームセンター',mall:'商業施設',super:'スーパー',drug:'ドラッグストア',station:'駅・その他'};
 const STOCK={many:'たくさん',few:'残りわずか',out:'売切れ'};
 const H=3600e3;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -356,6 +360,67 @@ const layer=L.layerGroup().addTo(map);let meMark=null;
 const RADII=[[300,'300m'],[500,'500m'],[1000,'1km'],[3000,'3km'],[0,'範囲なし']];
 let radius=1000,rCircle=null,nearC=[],nearKey='',meAcc=null,followId=null,lastScanAt=null;
 const candLayer=L.layerGroup().addTo(map);
+/* ---- 📍 未登録のお店（商業施設・スーパー・ドラッグストアなど）を地図に表示 ---- */
+const FAC={mall:['🏬','mall','商業施設'],department_store:['🏬','mall','デパート'],supermarket:['🛒','super','スーパー'],chemist:['💊','drug','ドラッグストア'],
+  variety_store:['🏪','mall','100円ショップ・雑貨'],discount:['🏷️','mall','ディスカウントストア'],doityourself:['🔨','mall','ホームセンター'],
+  electronics:['📺','mall','家電量販店'],toys:['🧸','shop','おもちゃ屋'],arcade:['🎮','game','ゲームセンター']};
+const FAC_ZOOM=15;
+let facOn=true,facs=new Map(),facCells=new Set(),facTimer=null;
+try{facOn=localStorage.getItem('gachamap-fac')!=='0'}catch(e){}
+const facLayer=L.layerGroup().addTo(map);
+function facKind(t){return t.leisure==='amusement_arcade'?'arcade':has(FAC,t.shop)?t.shop:null}
+function facIcon(k){return L.divIcon({className:'',iconSize:[32,32],iconAnchor:[16,34],popupAnchor:[0,-30],html:`<div class="fpin"><span>${FAC[k][0]}</span></div>`})}
+function facRegistered(f){return stores.some(s=>s.osm===f.osm||map.distance([s.lat,s.lng],[f.lat,f.lng])<30)}
+function drawFacs(){
+  facLayer.clearLayers();
+  const hint=$('facHint');if(hint)hint.textContent=!facOn?'':map.getZoom()<FAC_ZOOM?'🔍拡大で📍未登録':'📍未登録';
+  if(!facOn||map.getZoom()<FAC_ZOOM)return;
+  const b=map.getBounds().pad(.25);let n=0;
+  for(const f of facs.values()){
+    if(!b.contains([f.lat,f.lng])||facRegistered(f)||nearC.some(c=>c.osm===f.osm))continue;
+    if(++n>300)break;
+    L.marker([f.lat,f.lng],{icon:facIcon(f.kind),title:f.name+'（未登録）',keyboard:true}).bindPopup(()=>facPopup(f),{maxWidth:260,autoPanPaddingTopLeft:[10,80],autoPanPaddingBottomRight:[70,20]}).addTo(facLayer);
+  }
+}
+function facPopup(f){
+  const d=document.createElement('div'),[em,,lab]=FAC[f.kind];
+  d.innerHTML=`<b>${esc(f.name)}</b><div class="meta">${em} ${esc(lab)}・<b>未登録</b></div>${f.addr?`<div class="meta">${esc(f.addr)}</div>`:''}
+   <p class="meta" style="margin:6px 0 0">ガチャガチャがあったら登録してね（+10ポイント）</p>
+   <button class="btn b-red" type="button" style="width:100%">ガチャがある！登録する</button>
+   <a href="https://www.google.com/maps/search/?api=1&query=${+f.lat},${+f.lng}" target="_blank" rel="noopener">Googleマップで見る</a>`;
+  d.querySelector('button').addEventListener('click',()=>{map.closePopup();regFac(f)});
+  return d;
+}
+function regFac(f){
+  if(!canWrite())return;
+  if(stores.some(s=>s.osm===f.osm))return toast('もう登録されています');
+  if(stores.length>=5000)return toast('登録できる数の上限です');
+  const s={id:safeId('','s'),name:f.name,type:FAC[f.kind][1],lat:+f.lat.toFixed(6),lng:+f.lng.toFixed(6),hours:f.hours,addr:f.addr,osm:f.osm,machines:[]};
+  stores.push(s);commit(s,true);open(s.id);toast('お店を登録しました（+10ポイント）。ガチャを追加してね');
+}
+async function facScan(){
+  if(!facOn||map.getZoom()<FAC_ZOOM)return drawFacs();
+  const b=map.getBounds(),G=.02,cells=[];
+  for(let la=Math.floor(b.getSouth()/G);la<=Math.floor(b.getNorth()/G);la++)
+    for(let ln=Math.floor(b.getWest()/G);ln<=Math.floor(b.getEast()/G);ln++){const k=la+':'+ln;if(!facCells.has(k))cells.push([la,ln,k])}
+  if(!cells.length||cells.length>16)return drawFacs();
+  cells.forEach(c=>facCells.add(c[2]));
+  const bb=[Math.min(...cells.map(c=>c[0]))*G,Math.min(...cells.map(c=>c[1]))*G,(Math.max(...cells.map(c=>c[0]))+1)*G,(Math.max(...cells.map(c=>c[1]))+1)*G].map(v=>v.toFixed(4)).join(',');
+  const ql=`[out:json][timeout:25];(nwr["shop"~"^(mall|department_store|supermarket|chemist|variety_store|discount|doityourself|electronics|toys)$"](${bb});nwr["leisure"="amusement_arcade"](${bb}););out center tags 800;`;
+  try{
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(ql)});
+    if(!r.ok)throw 0;const j=await r.json();
+    (Array.isArray(j.elements)?j.elements:[]).forEach(e=>{
+      const t=e.tags||{},k=facKind(t);if(!k)return;
+      const name=clean(t.name||t.brand||'',60),lat=+(e.lat??e.center?.lat),lng=+(e.lon??e.center?.lon),osm=`${e.type}/${e.id}`;
+      if(!name||!isFinite(lat)||!isFinite(lng)||!inJapan(lat,lng)||!/^(node|way|relation)\/\d+$/.test(osm))return;
+      facs.set(osm,{osm,name,lat,lng,kind:k,hours:clean(t.opening_hours,40),
+        addr:clean([t['addr:province'],t['addr:city'],t['addr:quarter'],t['addr:neighbourhood'],t['addr:block_number'],t['addr:housenumber']].filter(Boolean).join(''),80)});
+    });
+    drawFacs();
+  }catch(e){cells.forEach(c=>facCells.delete(c[2]))}
+}
+map.on('moveend',()=>{clearTimeout(facTimer);facTimer=setTimeout(facScan,700)});
 function walk(d){return Math.max(1,Math.round(d*1.3/80))}
 function candIcon(){return L.divIcon({className:'pin',iconSize:[26,32],iconAnchor:[13,32],html:'<svg width="26" height="32" viewBox="0 0 34 42"><path d="M17 41 10 30h14z" fill="#6b6b70"/><rect x="5" y="2" width="24" height="30" rx="12" fill="#fff" stroke="#6b6b70" stroke-width="2.5" stroke-dasharray="4 3"/><text x="17" y="22" font-size="14" text-anchor="middle" fill="#6b6b70" font-weight="700">?</text></svg>'})}
 function radiusBtns(){
@@ -365,7 +430,7 @@ function radiusBtns(){
 
 function chips(){
   const c=radiusBtns()+[['all','すべて'],...Object.entries(TYPES)].map(([k,v])=>`<button class="chip ${ftype===k?'on':''}" data-t="${k}">${v}</button>`).join('');
-  $('chips').innerHTML=c+`<button class="chip ${fstock?'on':''}" data-f="stock">在庫ありだけ</button><button class="chip ${ffresh?'on':''}" data-f="fresh">24時間以内に更新</button><button class="chip" data-f="osm">ガチャ店を探して登録</button><button class="chip" data-f="data">データ</button>`;
+  $('chips').innerHTML=c+`<button class="chip ${fstock?'on':''}" data-f="stock">在庫ありだけ</button><button class="chip ${ffresh?'on':''}" data-f="fresh">24時間以内に更新</button><button class="chip ${facOn?'on':''}" data-f="fac">📍未登録の店</button><button class="chip" data-f="osm">ガチャ店を探して登録</button><button class="chip" data-f="data">データ</button>`;
 }
 function render(){
   chips();const vs=visible();layer.clearLayers();
@@ -375,6 +440,7 @@ function render(){
   else if(rCircle){rCircle.remove();rCircle=null}
   candLayer.clearLayers();
   nearCands().forEach(c=>L.marker([c.lat,c.lng],{icon:candIcon(),title:c.name}).on('click',()=>showCand(c.osm)).addTo(candLayer));
+  drawFacs();
   const s=stores.find(x=>x.id===sel);
   s?detail(s):list(vs);
 }
@@ -418,6 +484,7 @@ $('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)
   if(b.dataset.f==='fresh')ffresh=!ffresh;
   if(b.dataset.f==='data'){$('dTxt').value=JSON.stringify(stores);showModal('mData',true);return}
   if(b.dataset.f==='osm'){openOsm();return}
+  if(b.dataset.f==='fac'){facOn=!facOn;try{localStorage.setItem('gachamap-fac',facOn?'1':'0')}catch(x){}render();facScan();toast(facOn?'未登録のお店を📍で表示します（地図を拡大すると出ます）':'📍を非表示にしました');return}
   if(b.dataset.r!=null){radius=+b.dataset.r;sel=null;render();fitRadius();nearScan();return}
   sel=null;render()});
 /* ---- 場所検索：駅・施設は OpenStreetMap(Nominatim)、住所は国土地理院 ---- */
@@ -523,6 +590,8 @@ let cands=[];
 function guessType(t){
   if(t.leisure==='amusement_arcade')return'game';
   if(t.amenity==='vending_machine'||t.vending)return'station';
+  if(t.shop==='supermarket')return'super';
+  if(t.shop==='chemist')return'drug';
   if(/mall|department_store/.test(t.shop||''))return'mall';
   return'shop';
 }
@@ -969,6 +1038,7 @@ $('pb').addEventListener('click',async e=>{
 });
 $('phFile').addEventListener('change',e=>postPhoto(e.target.files&&e.target.files[0]));
 if(FB){stores=[];startCloud()}
+setTimeout(facScan,800);
 render();
 }
 </script>

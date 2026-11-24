@@ -24,7 +24,7 @@ service cloud.firestore {
         && d.keys().hasAll(['name','type','lat','lng','hours','addr','machines',
                             'by','createdAt','updatedAt','updatedBy'])
         && str(d.name, 60) && d.name.size() >= 2
-        && d.type in ['shop','game','mall','station']
+        && d.type in ['shop','game','mall','super','drug','station']
         && d.lat is number && d.lat >= 20 && d.lat <= 46
         && d.lng is number && d.lng >= 122 && d.lng <= 154
         && str(d.hours, 40) && str(d.addr, 80)
