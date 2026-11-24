@@ -6,7 +6,7 @@ import json, re, sys, datetime, os
 MIN_COUNT = {"aeon": 100, "drug": 3000, "books": 1000, "gacha": 50}   # これより少ないときは失敗とみなし、古いデータを残す
 CTRL = re.compile(r"[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩﻿]")
 AEON = re.compile(r"^(イオン|AEON)")
-GACHA = re.compile(r"(?<![ァ-ヴー])(ガチャ|ガシャ)(?!ン)|カプセルトイ|カプセル トイ|gashapon|gachapon|\bgacha|capsule ?toy", re.I)
+GACHA = re.compile(r"(?<![ァ-ヴー])(ガチャ|ガシャ)(?!ン)|カプセルトイ|カプセル トイ|gashapon|gachapon|gacha|capsule ?toy", re.I)
 
 
 def clean(v, n):
