@@ -13,9 +13,10 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-E8aAZlbFlSpUZI938rE73QIPPZ492JAQ9OU0Q7YcBkg='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-fIPynb9WfarbwUdMPs83JUjCJr0NftHf4M0DPWlk+F4='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
 <style>
@@ -47,6 +48,7 @@ header{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000002e;padding:c
 .tabs{display:flex;gap:6px;margin:0 0 6px}.tabs button{flex:1;min-height:44px;border:0;border-bottom:3px solid var(--line);background:none;font:inherit;font-weight:800;color:var(--sub);cursor:pointer}.tabs button.on{border-color:var(--red);color:var(--ink)}
 .linkbtn{border:0;background:none;color:#1a73e8;font:inherit;font-size:14px;padding:10px 0;cursor:pointer;min-height:44px}
 .fpin{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#fff;border:2.5px solid #1a73e8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px #0004}
+.ncl{background:#1a73e8;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;border:3px solid #fff;box-shadow:0 2px 6px #0005;width:100%;height:100%}
 .fpin span{transform:rotate(45deg);font-size:15px;line-height:1}
 .leaflet-popup-content{font:14px/1.5 "M PLUS Rounded 1c",-apple-system,"Hiragino Sans",sans-serif;margin:12px 14px}
 .leaflet-popup-content .btn{margin:8px 0 6px}
@@ -254,6 +256,7 @@ header{position:relative}
 
 <script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg=" crossorigin="anonymous"></script>
 <script>
 {
 const KEY='gachamap-v1';
@@ -361,23 +364,61 @@ const RADII=[[300,'300m'],[500,'500m'],[1000,'1km'],[3000,'3km'],[0,'範囲な�
 let radius=1000,rCircle=null,nearC=[],nearKey='',meAcc=null,followId=null,lastScanAt=null;
 const candLayer=L.layerGroup().addTo(map);
 /* ---- 📍 未登録のお店（商業施設・スーパー・ドラッグストアなど）を地図に表示 ---- */
-const FAC={mall:['🏬','mall','商業施設'],department_store:['🏬','mall','デパート'],supermarket:['🛒','super','スーパー'],chemist:['💊','drug','ドラッグストア'],
+const FAC={aeonmall:['🏬','mall','イオンモール'],aeon:['🛒','super','イオン'],mall:['🏬','mall','商業施設'],department_store:['🏬','mall','デパート'],supermarket:['🛒','super','スーパー'],chemist:['💊','drug','ドラッグストア'],
   variety_store:['🏪','mall','100円ショップ・雑貨'],discount:['🏷️','mall','ディスカウントストア'],doityourself:['🔨','mall','ホームセンター'],
   electronics:['📺','mall','家電量販店'],toys:['🧸','shop','おもちゃ屋'],arcade:['🎮','game','ゲームセンター']};
 const FAC_ZOOM=15;
 let facOn=true,facs=new Map(),facCells=new Set(),facTimer=null;
 try{facOn=localStorage.getItem('gachamap-fac')!=='0'}catch(e){}
 const facLayer=L.layerGroup().addTo(map);
+/* 全国のイオン・イオンモール・ドラッグストア（GitHubで自動作成した一覧を読み込む）。遠くから見ると数字でまとめて表示 */
+let natFacs=[],natSet=new Set(),natKey='',natInfo=null;
+const natLayer=L.markerClusterGroup?L.markerClusterGroup({chunkedLoading:true,showCoverageOnHover:false,spiderfyOnMaxZoom:true,maxClusterRadius:55,disableClusteringAtZoom:16,
+  iconCreateFunction:c=>{const n=c.getChildCount();const z=n<100?36:n<1000?44:52;return L.divIcon({className:'',iconSize:[z,z],html:`<div class="ncl">📍${n>=10000?Math.round(n/1000)+'k':n}</div>`})}}):L.layerGroup();
+map.addLayer(natLayer);
+function storeGrid(){const g=new Map();for(const s of stores){const k=Math.round(s.lat/.0005)+':'+Math.round(s.lng/.0005);(g.get(k)||g.set(k,[]).get(k)).push(s)}return g}
+function natRegistered(f,osmSet,g){
+  if(osmSet.has(f.osm))return true;
+  const a=Math.round(f.lat/.0005),b=Math.round(f.lng/.0005);
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const l=g.get((a+i)+':'+(b+j));if(l&&l.some(s=>map.distance([s.lat,s.lng],[f.lat,f.lng])<30))return true}
+  return false;
+}
+function drawNat(){
+  const key=facOn+'|'+natFacs.length+'|'+stores.length+'|'+stores.reduce((a,s)=>a+(s.osm?1:0),0);
+  if(key===natKey)return;natKey=key;
+  natLayer.clearLayers();if(!facOn||!natFacs.length)return;
+  const osmSet=new Set(stores.map(s=>s.osm).filter(Boolean)),g=storeGrid();
+  const ms=[];
+  for(const f of natFacs){if(natRegistered(f,osmSet,g))continue;
+    ms.push(L.marker([f.lat,f.lng],{icon:facIcon(f.kind),title:f.name+'（未登録）'}).bindPopup(()=>facPopup(f),{maxWidth:260,autoPanPaddingTopLeft:[10,80],autoPanPaddingBottomRight:[70,20]}))}
+  natLayer.addLayers?natLayer.addLayers(ms):ms.forEach(m=>natLayer.addLayer(m));
+}
+async function loadNat(){
+  try{
+    const r=await fetch('data/facilities.json',{cache:'no-cache'});if(!r.ok)return;
+    const j=await r.json();if(!j||!Array.isArray(j.items))return;
+    const out=[];
+    for(const it of j.items.slice(0,60000)){
+      if(!Array.isArray(it))continue;
+      const [lat,lng,kind,name,osm]=it;
+      if(typeof lat!=='number'||typeof lng!=='number'||!inJapan(lat,lng)||!has(FAC,kind)||typeof osm!=='string'||!/^(node|way|relation)\/\d+$/.test(osm))continue;
+      const nm=clean(name,60);if(!nm)continue;
+      out.push({lat,lng,kind,name:nm,osm,addr:'',hours:''});
+    }
+    natFacs=out;natSet=new Set(out.map(f=>f.osm));natInfo={updated:clean(j.updated,30),n:out.length};natKey='';drawFacs();
+  }catch(e){}
+}
 function facKind(t){return t.leisure==='amusement_arcade'?'arcade':has(FAC,t.shop)?t.shop:null}
 function facIcon(k){return L.divIcon({className:'',iconSize:[32,32],iconAnchor:[16,34],popupAnchor:[0,-30],html:`<div class="fpin"><span>${FAC[k][0]}</span></div>`})}
 function facRegistered(f){return stores.some(s=>s.osm===f.osm||map.distance([s.lat,s.lng],[f.lat,f.lng])<30)}
 function drawFacs(){
   facLayer.clearLayers();
-  const hint=$('facHint');if(hint)hint.textContent=!facOn?'':map.getZoom()<FAC_ZOOM?'🔍拡大で📍未登録':'📍未登録';
+  const hint=$('facHint');if(hint)hint.textContent=!facOn?'':'📍未登録';
+  drawNat();
   if(!facOn||map.getZoom()<FAC_ZOOM)return;
   const b=map.getBounds().pad(.25);let n=0;
   for(const f of facs.values()){
-    if(!b.contains([f.lat,f.lng])||facRegistered(f)||nearC.some(c=>c.osm===f.osm))continue;
+    if(!b.contains([f.lat,f.lng])||natSet.has(f.osm)||facRegistered(f)||nearC.some(c=>c.osm===f.osm))continue;
     if(++n>300)break;
     L.marker([f.lat,f.lng],{icon:facIcon(f.kind),title:f.name+'（未登録）',keyboard:true}).bindPopup(()=>facPopup(f),{maxWidth:260,autoPanPaddingTopLeft:[10,80],autoPanPaddingBottomRight:[70,20]}).addTo(facLayer);
   }
@@ -1039,6 +1080,7 @@ $('pb').addEventListener('click',async e=>{
 $('phFile').addEventListener('change',e=>postPhoto(e.target.files&&e.target.files[0]));
 if(FB){stores=[];startCloud()}
 setTimeout(facScan,800);
+loadNat();
 render();
 }
 </script>
