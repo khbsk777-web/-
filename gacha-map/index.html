@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#e63946">
+<meta name="theme-color" content="#ffffff">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ガチャマップ">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'sha256-d04DFFy3pKUi6uvwxjQ9NgxPpdaEZMqqveinkBSxnFA='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-wwrw8K+e+jHWWMVkZBWABrIKY5cyLzG8W2K1inwQ5IA='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://*.tile.openstreetmap.org https://unpkg.com; connect-src https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,20 +29,24 @@
 html,body{margin:0;height:100%;overscroll-behavior:none}
 body{font:16px/1.5 "M PLUS Rounded 1c",-apple-system,"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column;overflow:hidden;height:100vh;height:100dvh;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 button,a,.item,.chip{touch-action:manipulation}
-header{background:var(--red);color:#fff;padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 12px calc(14px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:8px;z-index:500}
+header{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000002e;padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 12px calc(14px + env(safe-area-inset-left));display:flex;flex-direction:column;gap:8px;z-index:500}
 .search input::-webkit-search-cancel-button{display:none}
 .handle{display:none}
 .go{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .go a{flex:1;text-align:center;text-decoration:none;background:var(--soft);color:var(--ink);border-radius:10px;padding:10px;font-weight:800;font-size:14px;min-height:44px}
 .top{display:flex;align-items:center;gap:10px}
-.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:20px;color:var(--red)}
 .logo svg{flex:none}
-.search{flex:1;display:flex;background:#fff;border-radius:999px;padding:0 6px 0 14px;align-items:center}
+.search{flex:1;display:flex;background:#f1f3f4;border-radius:999px;padding:0 6px 0 14px;align-items:center}
 .search input{flex:1;border:0;outline:0;font:inherit;font-size:16px;height:42px;background:none;color:var(--ink)}
 .search button{border:0;background:none;font:inherit;color:var(--sub);height:36px;padding:0 8px;cursor:pointer}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-.chip{flex:none;border:2px solid #fff;background:transparent;color:#fff;border-radius:999px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:34px}
-.chip.on{background:#fff;color:var(--red)}
+.chip{flex:none;border:1px solid #dadce0;background:#fff;color:#3c4043;border-radius:999px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer;min-height:34px}
+.chip.on{background:#fde8ea;border-color:var(--red);color:#c5221f}
+.acct{position:relative}.acct.in::after{content:"";position:absolute;right:8px;top:8px;width:10px;height:10px;border-radius:50%;background:#1e8e3e;border:2px solid #fff}
+.tabs{display:flex;gap:6px;margin:0 0 6px}.tabs button{flex:1;min-height:44px;border:0;border-bottom:3px solid var(--line);background:none;font:inherit;font-weight:800;color:var(--sub);cursor:pointer}.tabs button.on{border-color:var(--red);color:var(--ink)}
+.linkbtn{border:0;background:none;color:#1a73e8;font:inherit;font-size:14px;padding:10px 0;cursor:pointer;min-height:44px}
+.ok{background:#e6f4ea;border:2px solid #1e8e3e;border-radius:10px;padding:8px 10px;font-size:14px}
 main{flex:1;position:relative;display:flex}
 .mapwrap{flex:1;position:relative;display:flex}
 #map{flex:1;z-index:1}
@@ -112,6 +116,7 @@ header{position:relative}
   .pb{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
   .fab{bottom:12px;right:calc(14px + env(safe-area-inset-right))}
   .card{max-height:calc(100dvh - 32px)}
+  .leaflet-control-zoom{display:none}
   .legend{bottom:auto;top:10px}
   .logo span{display:none}
 }
@@ -121,7 +126,7 @@ header{position:relative}
 <header>
   <div class="top">
     <div class="logo">
-      <svg width="30" height="34" viewBox="0 0 30 34" aria-hidden="true"><rect x="2" y="1" width="26" height="32" rx="4" fill="#fff"/><rect x="5" y="4" width="20" height="13" rx="3" fill="#cfeef7"/><circle cx="10" cy="13" r="3" fill="#ffc93c"/><circle cx="16" cy="13" r="3" fill="#2a9d8f"/><circle cx="21" cy="12" r="3" fill="#e63946"/><circle cx="13" cy="8" r="3" fill="#2a9d8f"/><circle cx="15" cy="25" r="5" fill="#1d1d1f"/><rect x="14" y="21" width="2" height="8" fill="#fff"/></svg>
+      <svg width="30" height="34" viewBox="0 0 30 34" aria-hidden="true"><rect x="2" y="1" width="26" height="32" rx="4" fill="#e63946"/><rect x="5" y="4" width="20" height="13" rx="3" fill="#cfeef7"/><circle cx="10" cy="13" r="3" fill="#ffc93c"/><circle cx="16" cy="13" r="3" fill="#2a9d8f"/><circle cx="21" cy="12" r="3" fill="#e63946"/><circle cx="13" cy="8" r="3" fill="#2a9d8f"/><circle cx="15" cy="25" r="5" fill="#1d1d1f"/><rect x="14" y="21" width="2" height="8" fill="#fff"/></svg>
       <span>ガチャマップ</span>
     </div>
     <form class="search" id="sf">
@@ -129,6 +134,7 @@ header{position:relative}
       <button type="button" id="qc" aria-label="クリア">✕</button>
       <button id="qs" aria-label="場所を検索">🔍</button>
     </form>
+    <button class="icon acct" id="acct" type="button" aria-label="アカウント">👤</button>
   </div>
   <div class="sugg" id="sugg"></div>
   <div class="chips" id="chips"></div>
@@ -197,8 +203,33 @@ header{position:relative}
   <p class="meta" id="gDiag"></p>
   <div class="acts"><button class="btn b-line" data-close>閉じる</button><button class="btn b-red" id="gPick">地図で現在地を指定</button></div>
 </div></div>
+<div class="modal" id="mAuth"><form class="card" id="fAuth" novalidate>
+  <h3 id="aTitle">アカウント</h3>
+  <p class="meta" id="aMsg" role="status"></p>
+  <div id="aPane">
+    <div class="tabs" id="aTabs"><button type="button" data-am="login">ログイン</button><button type="button" data-am="signup">新規登録</button></div>
+    <label for="aEmail">メールアドレス</label><input id="aEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="254">
+    <label for="aPass">パスワード</label><input id="aPass" type="password" autocomplete="current-password" maxlength="128">
+    <div id="aSign" hidden>
+      <label for="aPass2">パスワード（もう一度）</label><input id="aPass2" type="password" autocomplete="new-password" maxlength="128">
+      <p class="meta" id="aRule">10文字以上で、英字と数字を両方ふくめてね。</p>
+    </div>
+    <label class="meta" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="aShow" style="width:20px;height:20px">パスワードを表示</label>
+    <button type="button" class="linkbtn" id="aForgot">パスワードを忘れたとき</button>
+  </div>
+  <div id="aVer" hidden>
+    <p class="warn">確認メールを送りました。メールのリンクを押してから「確認できた」を押してね。迷惑メールのフォルダも見てね。</p>
+    <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button type="button" class="btn b-red" id="aChecked">確認できた</button><button type="button" class="btn b-line" id="aResend">確認メールを再送</button></div>
+  </div>
+  <div id="aIn" hidden>
+    <p class="ok">ログイン中：<b id="aWho"></b></p>
+    <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button type="button" class="btn b-line" id="aOut">ログアウト</button><button type="button" class="btn b-line" id="aDel" style="color:#c5221f">アカウントを削除</button></div>
+  </div>
+  <div class="acts"><button type="button" class="btn b-line" data-close>閉じる</button><button class="btn b-red" id="aGo">ログイン</button></div>
+</form></div>
 <div class="toast" id="toast"></div>
 
+<script src="firebase-config.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <script>
 {
@@ -223,7 +254,7 @@ const SAMPLE=[
   {id:'m8',title:'電車の行先表示ミニ',price:300,stock:'few',t:Date.now()-4*H}]},
  {id:'s5',name:'サンプル カプセル堂 京橋',type:'shop',lat:34.6965,lng:135.5335,hours:'11:00〜20:00',addr:'商店街の中',machines:[]}
 ];
-let stores=load(),sel=null,q='',ftype='all',fstock=false,ffresh=false,me=null,adding=false,pending=null,place=null,placeMark=null,accCircle=null,watchId=null,stopTimer=null,geoTimer=null,geoSeq=0;
+let cloud=null,user=null,stores=load(),sel=null,q='',ftype='all',fstock=false,ffresh=false,me=null,adding=false,pending=null,place=null,placeMark=null,accCircle=null,watchId=null,stopTimer=null,geoTimer=null,geoSeq=0;
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 /* ---- セキュリティ：入ってくる文字・データはすべて形と長さをチェックしてから使う ---- */
@@ -247,12 +278,13 @@ function valid(d){
     }).filter(m=>m&&m.title);
     const st={id,name,type:has(TYPES,s.type)?s.type:'shop',lat,lng,hours:clean(s.hours,40),addr:clean(s.addr,80),machines:ms};
     const osm=clean(s.osm,30);if(/^(node|way|relation)\/\d+$/.test(osm))st.osm=osm;
+    const by=clean(s.by,128);if(/^[A-Za-z0-9]{1,128}$/.test(by))st.by=by;
     out.push(st);
   }
   return out;
 }
 function load(){try{const v=valid(JSON.parse(localStorage.getItem(KEY)));if(v&&v.length)return v}catch(e){}return valid(SAMPLE)}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(stores))}catch(e){}}
+function save(){if(cloud)return;try{localStorage.setItem(KEY,JSON.stringify(stores))}catch(e){}}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2000)}
 function ago(t){if(!t)return'';const m=(Date.now()-t)/6e4;if(m<1)return'たった今';if(m<60)return Math.floor(m)+'分前';if(m<1440)return Math.floor(m/60)+'時間前';return Math.floor(m/1440)+'日前'}
 function status(s){const ms=s.machines;if(!ms.length)return'none';if(ms.some(m=>m.stock==='many'))return'many';if(ms.some(m=>m.stock==='few'))return'few';return'out'}
@@ -277,9 +309,11 @@ function icon(st,on){const s=on?44:34;return L.divIcon({className:'pin',iconSize
 
 const map=L.map('map',{zoomControl:false}).setView([34.68,135.505],13);
 L.control.zoom({position:'topright'}).addTo(map);
-const gsi=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'}).addTo(map);
+const voy=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>'}).addTo(map);
+const gsi=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'});
+const pale=L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:18,attribution:'<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'});
 const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'&copy; OpenStreetMap contributors'});
-L.control.layers({'地理院地図':gsi,'OpenStreetMap':osm},null,{position:'topright'}).addTo(map);
+L.control.layers({'かんたん地図':voy,'地理院地図':gsi,'地理院 淡色':pale,'OpenStreetMap':osm},null,{position:'topright'}).addTo(map);
 const layer=L.layerGroup().addTo(map);let meMark=null;
 /* ---- 近くの範囲（半径）・徒歩の目安・未登録のガチャ店 ---- */
 const RADII=[[300,'300m'],[500,'500m'],[1000,'1km'],[3000,'3km'],[0,'範囲なし']];
@@ -289,7 +323,7 @@ function walk(d){return Math.max(1,Math.round(d*1.3/80))}
 function candIcon(){return L.divIcon({className:'pin',iconSize:[26,32],iconAnchor:[13,32],html:'<svg width="26" height="32" viewBox="0 0 34 42"><path d="M17 41 10 30h14z" fill="#6b6b70"/><rect x="5" y="2" width="24" height="30" rx="12" fill="#fff" stroke="#6b6b70" stroke-width="2.5" stroke-dasharray="4 3"/><text x="17" y="22" font-size="14" text-anchor="middle" fill="#6b6b70" font-weight="700">?</text></svg>'})}
 function radiusBtns(){
   if(!ref())return'';
-  return'<span style="flex:none;align-self:center;font-size:13px;opacity:.9">半径</span>'+RADII.map(([r,l])=>`<button class="chip ${radius===r?'on':''}" data-r="${r}">${l}</button>`).join('');
+  return'<span style="flex:none;align-self:center;font-size:13px;color:var(--sub)">半径</span>'+RADII.map(([r,l])=>`<button class="chip ${radius===r?'on':''}" data-r="${r}">${l}</button>`).join('');
 }
 
 function chips(){
@@ -324,7 +358,7 @@ function list(vs){
 }
 function detail(s){
   $('panel').classList.remove('min');$('panel').classList.add('big');
-  $('ph').innerHTML=`<button class="icon" id="back" aria-label="一覧に戻る">←</button><h2>${esc(s.name)}</h2><button class="icon" id="del" aria-label="店舗を削除">🗑</button>`;
+  $('ph').innerHTML=`<button class="icon" id="back" aria-label="一覧に戻る">←</button><h2>${esc(s.name)}</h2>${!cloud||(user&&s.by===user.uid)?'<button class="icon" id="del" aria-label="店舗を削除">🗑</button>':''}`;
   const ms=[...s.machines].sort((a,b)=>({many:0,few:1,out:2}[a.stock]-{many:0,few:1,out:2}[b.stock]));
   $('pb').innerHTML=`<div class="info"><div>${esc(TYPES[s.type]||'')}${ref()?'・'+(place?esc(place.name)+'から ':'現在地から ')+fmtD(dist(s)):''}</div>${s.hours?`<div>🕘 ${esc(s.hours)}</div>`:''}${s.addr?`<div>📌 ${esc(s.addr)}</div>`:''}
    <div class="go">${IOS?`<a href="https://maps.apple.com/?daddr=${+s.lat},${+s.lng}&dirflg=w">Appleマップで道順</a>`:''}<a href="https://www.google.com/maps/dir/?api=1&destination=${+s.lat},${+s.lng}&travelmode=walking" target="_blank" rel="noopener">Googleマップで道順</a></div>
@@ -400,18 +434,18 @@ $('pb').addEventListener('click',e=>{
   const rg=e.target.closest('[data-reg]');if(rg)return regCand(rg.dataset.reg);
   const it=e.target.closest('.item[data-id]');if(it)return open(it.dataset.id);
   const rb=e.target.closest('[data-st]');
-  if(rb){const s=stores.find(x=>x.id===sel),m=s.machines.find(x=>x.id===rb.closest('.mach').dataset.m);m.stock=rb.dataset.st;m.t=Date.now();save();render();toast('報告ありがとう！');return}
-  if(e.target.id==='addM'){$('fMach').reset();showModal('mMach',true)}
+  if(rb){const s=stores.find(x=>x.id===sel),m=s.machines.find(x=>x.id===rb.closest('.mach').dataset.m);if(!canWrite())return;m.stock=rb.dataset.st;m.t=Date.now();commit(s);render();toast('報告ありがとう！');return}
+  if(e.target.id==='addM'){if(!canWrite())return;$('fMach').reset();showModal('mMach',true)}
 });
 $('pb').addEventListener('keydown',e=>{const it=e.target.closest('.item');if(it&&e.key==='Enter')open(it.dataset.id)});
 $('ph').addEventListener('click',e=>{
   if(e.target.id==='back'){sel=null;render()}
   if(e.target.id==='clrP')clearPlace();
-  if(e.target.id==='del'){const b=e.target;if(b.dataset.ok){stores=stores.filter(x=>x.id!==sel);sel=null;save();render();toast('削除しました')}else{b.dataset.ok=1;b.textContent='削除?';setTimeout(()=>{if(b.isConnected){delete b.dataset.ok;b.textContent='🗑'}},3000)}}
+  if(e.target.id==='del'){const b=e.target;if(b.dataset.ok){if(!canWrite())return;const id=sel;stores=stores.filter(x=>x.id!==id);sel=null;commitDelete(id);render();toast('削除しました')}else{b.dataset.ok=1;b.textContent='削除?';setTimeout(()=>{if(b.isConnected){delete b.dataset.ok;b.textContent='🗑'}},3000)}}
 });
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('.modal').classList.remove('on')));
 $('sType').innerHTML=Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
-$('add').addEventListener('click',()=>{adding=!adding;$('banner').style.display=adding?'block':'none';map.getContainer().style.cursor=adding?'crosshair':''});
+$('add').addEventListener('click',()=>{if(!adding&&!canWrite())return;adding=!adding;$('banner').style.display=adding?'block':'none';map.getContainer().style.cursor=adding?'crosshair':''});
 /* ---- 店舗登録：場所の確認・住所の自動入力・重複チェック ---- */
 function nearBy(lat,lng,r){return stores.filter(s=>map.distance([lat,lng],[s.lat,s.lng])<r)}
 const normName=t=>clean(t,60).normalize('NFKC').toLowerCase().replace(/[\s・\-ー]/g,'');
@@ -437,13 +471,13 @@ $('fStore').addEventListener('submit',e=>{e.preventDefault();
   if(stores.some(s=>normName(s.name)===normName(name)&&map.distance(pending,[s.lat,s.lng])<300))return toast('同じ名前のお店がすぐ近くにあります');
   if(stores.length>=5000)return toast('登録できる数の上限です');
   const s={id:safeId('','s'),name,type:has(TYPES,$('sType').value)?$('sType').value:'shop',hours:clean($('sHours').value,40),addr:clean($('sAddr').value,80),lat:+pending.lat.toFixed(6),lng:+pending.lng.toFixed(6),machines:[]};
-  stores.push(s);save();showModal('mStore',false);open(s.id);toast('お店を追加しました')});
+  stores.push(s);commit(s,true);showModal('mStore',false);open(s.id);toast('お店を追加しました')});
 $('fMach').addEventListener('submit',e=>{e.preventDefault();const s=stores.find(x=>x.id===sel);if(!s)return;
   const title=clean($('mTitle').value,60);if(!title)return toast('ガチャの名前を入れてね');
   if(s.machines.some(m=>normName(m.title)===normName(title)))return toast('同じ名前のガチャがもう登録されています');
   if(s.machines.length>=300)return toast('1店舗に登録できる数の上限です');
   const st=$('mStock').value;
-  s.machines.push({id:safeId('','m'),title,price:Math.min(5000,Math.max(0,Math.round(+$('mPrice').value||0))),stock:has(STOCK,st)?st:'many',t:Date.now()});save();showModal('mMach',false);render();toast('ガチャを追加しました')});
+  s.machines.push({id:safeId('','m'),title,price:Math.min(5000,Math.max(0,Math.round(+$('mPrice').value||0))),stock:has(STOCK,st)?st:'many',t:Date.now()});commit(s);showModal('mMach',false);render();toast('ガチャを追加しました')});
 
 /* ---- OpenStreetMap からガチャ店を探して登録（利用OKのデータ・出典表示つき） ---- */
 let cands=[];
@@ -503,12 +537,13 @@ async function osmScan(opt){
   }catch(err){autoReg=false;$('oRun').disabled=false;$('oMori').disabled=false;$('oList').innerHTML='<div class="empty meta">地図データにつながりませんでした。混み合っていることがあるので、少し時間をおいて試してね。</div>'}
 }
 $('oAdd').addEventListener('click',()=>{
-  let n=0;
+  if(!canWrite())return;
+  let n=0;const added=[];
   document.querySelectorAll('#oList input[data-ci]:checked:not(:disabled)').forEach(cb=>{
     const c=cands[+cb.dataset.ci];if(!c||stores.some(s=>s.osm===c.osm)||stores.length>=5000)return;
-    stores.push({id:safeId('','s'),name:c.name,type:c.type,lat:+c.lat.toFixed(6),lng:+c.lng.toFixed(6),hours:c.hours,addr:c.addr,osm:c.osm,machines:[]});n++;
+    const ns={id:safeId('','s'),name:c.name,type:c.type,lat:+c.lat.toFixed(6),lng:+c.lng.toFixed(6),hours:c.hours,addr:c.addr,osm:c.osm,machines:[]};stores.push(ns);added.push(ns);n++;
   });
-  save();showModal('mOsm',false);sel=null;
+  commitMany(added);showModal('mOsm',false);sel=null;
   if(n&&($('oPref').value||$('oCity').value)){place=null;radius=0;const pts=cands.map(c=>[c.lat,c.lng]);if(pts.length)map.fitBounds(pts,{padding:[30,30]})}
   render();toast(n?n+'件のお店を登録しました':'登録するお店が選ばれていません');
 });
@@ -539,10 +574,11 @@ async function nearScan(){
 }
 function showCand(osm){setSize('');sel=null;render();const el=document.getElementById('c-'+osm.replace('/','-'));if(el){el.scrollIntoView({block:'center'});el.style.background='#fff6d9'}}
 function regCand(osm){
+  if(!canWrite())return;
   const c=nearC.find(x=>x.osm===osm);if(!c||stores.some(s=>s.osm===osm))return;
   if(stores.length>=5000)return toast('登録できる数の上限です');
   const s={id:safeId('','s'),name:c.name,type:c.type,lat:+c.lat.toFixed(6),lng:+c.lng.toFixed(6),hours:c.hours,addr:c.addr,osm:c.osm,machines:[]};
-  stores.push(s);save();open(s.id);toast('お店を登録しました。ガチャを追加してね');
+  stores.push(s);commit(s,true);open(s.id);toast('お店を登録しました。ガチャを追加してね');
 }
 /* 歩いている間も現在地を追いかけて、近い順を更新する */
 function startFollow(){
@@ -614,7 +650,7 @@ $('gPick').addEventListener('click',()=>{showModal('mGeo',false);pickMe=true;con
 map.on('click',e=>{if(!pickMe)return;pickMe=false;$('banner').style.display='none';place=null;if(placeMark){placeMark.remove();placeMark=null}
   stopFollow();showMe({latitude:e.latlng.lat,longitude:e.latlng.lng,accuracy:30},false);nearScan();toast('ここを現在地にしました')});
 $('dCopy').addEventListener('click',()=>{navigator.clipboard?.writeText($('dTxt').value).then(()=>toast('コピーしました'),()=>{$('dTxt').select();toast('選択したのでコピーしてね')})});
-$('dLoad').addEventListener('click',()=>{try{
+$('dLoad').addEventListener('click',()=>{if(cloud)return toast('みんなで共有するモードでは、読み込みは使えません');try{
   const txt=$('dTxt').value;if(txt.length>3e6)throw 0;
   const d=JSON.parse(txt),v=valid(d);if(!v||(!v.length&&d.length))throw 0;
   const skip=d.length-v.length;stores=v;sel=null;save();showModal('mData',false);render();
@@ -630,6 +666,129 @@ document.addEventListener('touchend',e=>{if(sy==null)return;const dy=e.changedTo
   if(dy<-40)setSize(P.classList.contains('min')?'':'big');else if(dy>40)setSize(P.classList.contains('big')?'':'min')});
 window.addEventListener('resize',()=>map.invalidateSize());
 window.addEventListener('orientationchange',()=>setTimeout(()=>map.invalidateSize(),300));
+/* ===== みんなで共有するモード（Firebase）：メールアドレス＋パスワードのアカウント ===== */
+const FBC=window.GACHA_FIREBASE;
+const FB=FBC&&typeof FBC==='object'&&/^[\w-]{20,60}$/.test(FBC.apiKey||'')&&/^[a-z0-9-]{4,40}$/.test(FBC.projectId||'')?FBC:null;
+const FBV='13.2.0';
+const AUTH_ERR={'auth/invalid-credential':'メールアドレスかパスワードが違います','auth/wrong-password':'メールアドレスかパスワードが違います','auth/user-not-found':'メールアドレスかパスワードが違います',
+ 'auth/invalid-email':'メールアドレスの形が正しくありません','auth/email-already-in-use':'このメールアドレスでは登録できません。ログインするか、パスワードの再設定を試してね',
+ 'auth/weak-password':'パスワードが弱すぎます','auth/password-does-not-meet-requirements':'パスワードが条件を満たしていません',
+ 'auth/too-many-requests':'試した回数が多すぎます。しばらく時間をおいてね','auth/network-request-failed':'通信できませんでした',
+ 'auth/requires-recent-login':'安全のため、もう一度ログインしてから操作してね','auth/user-disabled':'このアカウントは使えません'};
+const aerr=e=>AUTH_ERR[e&&e.code]||'うまくいきませんでした。時間をおいて試してね';
+let amode='login',busy=false;
+function emailOk(v){return v.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)}
+function passProblem(p,email){
+  if(p.length<10)return'パスワードは10文字以上にしてね';
+  if(!/[A-Za-z]/.test(p)||!/[0-9]/.test(p))return'英字と数字を両方ふくめてね';
+  if(/^(.)\1+$/.test(p)||/^(?:0123456789|1234567890|password\d*|qwerty\w*)$/i.test(p))return'かんたんすぎるパスワードは使えません';
+  if(email&&p.toLowerCase().includes(email.split('@')[0].toLowerCase())&&email.split('@')[0].length>=4)return'メールアドレスと似たパスワードは使えません';
+  return'';
+}
+function acctBtn(){$('acct').classList.toggle('in',!!(user&&user.emailVerified))}
+function setAuthMsg(t,warn){const m=$('aMsg');m.textContent=t||'';m.className=warn?'warn':'meta'}
+function openAuth(mode,msg){
+  if(!cloud){toast(FB?'準備中です。少し待ってね':'いまは各端末に保存するモードです（共有モードは準備中）');return}
+  if(user&&!user.emailVerified)mode='verify';else if(user)mode='in';
+  amode=mode;
+  $('aPane').hidden=!(mode==='login'||mode==='signup');$('aVer').hidden=mode!=='verify';$('aIn').hidden=mode!=='in';
+  $('aSign').hidden=mode!=='signup';$('aForgot').hidden=mode!=='login';
+  document.querySelectorAll('#aTabs button').forEach(b=>b.classList.toggle('on',b.dataset.am===mode));
+  $('aTitle').textContent={login:'ログイン',signup:'新規登録',verify:'メールの確認',in:'アカウント'}[mode];
+  $('aGo').hidden=!(mode==='login'||mode==='signup');$('aGo').textContent=mode==='signup'?'登録する':'ログイン';
+  $('aPass').autocomplete=mode==='signup'?'new-password':'current-password';
+  if(user)$('aWho').textContent=user.email||'';
+  setAuthMsg(msg||'');$('aPass').value='';$('aPass2').value='';
+  const d=$('aDel');d.textContent='アカウントを削除';delete d.dataset.ok;
+  showModal('mAuth',true);
+}
+function canWrite(){
+  if(!cloud)return true;
+  if(!user){openAuth('login','お店の登録や在庫の報告には、ログインが必要です');return false}
+  if(!user.emailVerified){openAuth('verify');return false}
+  return true;
+}
+function storeData(s){
+  const d={name:s.name,type:s.type,lat:s.lat,lng:s.lng,hours:s.hours||'',addr:s.addr||'',
+    machines:s.machines.map(m=>({id:m.id,title:m.title,price:m.price,stock:m.stock,t:m.t}))};
+  if(s.osm)d.osm=s.osm;return d;
+}
+function cloudFail(e){toast(e&&e.code==='permission-denied'?'保存できませんでした（同じお店への操作は3秒あけてね）':'保存できませんでした。通信を確認してね')}
+function commit(s,isNew){
+  if(!cloud){save();return}
+  const {F,db}=cloud,ref=F.doc(db,'stores',s.id),d=storeData(s);
+  d.updatedAt=F.serverTimestamp();d.updatedBy=user.uid;
+  if(isNew){s.by=user.uid;d.by=user.uid;d.createdAt=F.serverTimestamp();F.setDoc(ref,d).catch(cloudFail)}
+  else F.updateDoc(ref,{machines:d.machines,hours:d.hours,addr:d.addr,updatedAt:d.updatedAt,updatedBy:d.updatedBy}).catch(cloudFail);
+}
+function commitMany(list){
+  if(!list.length)return;
+  if(!cloud){save();return}
+  const {F,db}=cloud;
+  for(let i=0;i<list.length;i+=400){
+    const b=F.writeBatch(db);
+    list.slice(i,i+400).forEach(s=>{const d=storeData(s);s.by=user.uid;Object.assign(d,{by:user.uid,createdAt:F.serverTimestamp(),updatedAt:F.serverTimestamp(),updatedBy:user.uid});b.set(F.doc(db,'stores',s.id),d)});
+    b.commit().catch(cloudFail);
+  }
+}
+function commitDelete(id){
+  if(!cloud){save();return}
+  const {F,db}=cloud;F.deleteDoc(F.doc(db,'stores',id)).catch(e=>toast(e&&e.code==='permission-denied'?'削除できるのは登録した本人だけです':'削除できませんでした'));
+}
+document.querySelectorAll('#aTabs button').forEach(b=>b.addEventListener('click',()=>openAuth(b.dataset.am)));
+$('acct').addEventListener('click',()=>openAuth('login'));
+$('aShow').addEventListener('change',e=>{const t=e.target.checked?'text':'password';$('aPass').type=t;$('aPass2').type=t});
+$('aPass').addEventListener('input',()=>{if(amode==='signup'){const p=passProblem($('aPass').value,clean($('aEmail').value,254));$('aRule').textContent=p||'OK！ 安全なパスワードです';$('aRule').style.color=p?'':'#1e8e3e'}});
+$('fAuth').addEventListener('submit',async e=>{
+  e.preventDefault();if(busy||!cloud)return;
+  const {U,auth}=cloud,email=clean($('aEmail').value,254).toLowerCase(),pass=$('aPass').value;
+  if(!emailOk(email))return setAuthMsg('メールアドレスの形が正しくありません',true);
+  if(amode==='signup'){
+    const p=passProblem(pass,email);if(p)return setAuthMsg(p,true);
+    if(pass!==$('aPass2').value)return setAuthMsg('2つのパスワードが同じではありません',true);
+  }else if(!pass)return setAuthMsg('パスワードを入れてね',true);
+  busy=true;$('aGo').disabled=true;setAuthMsg('通信しています…');
+  try{
+    if(amode==='signup'){const c=await U.createUserWithEmailAndPassword(auth,email,pass);await U.sendEmailVerification(c.user);openAuth('verify')}
+    else{await U.signInWithEmailAndPassword(auth,email,pass);openAuth(auth.currentUser&&auth.currentUser.emailVerified?'in':'verify');toast('ログインしました')}
+  }catch(err){setAuthMsg(aerr(err),true)}
+  finally{busy=false;$('aGo').disabled=false;$('aPass').value='';$('aPass2').value=''}
+});
+$('aForgot').addEventListener('click',async()=>{
+  const email=clean($('aEmail').value,254).toLowerCase();
+  if(!emailOk(email))return setAuthMsg('先にメールアドレスを入れてから押してね',true);
+  try{await cloud.U.sendPasswordResetEmail(cloud.auth,email)}catch(err){if(err&&err.code==='auth/too-many-requests')return setAuthMsg(aerr(err),true)}
+  setAuthMsg('登録されているアドレスなら、再設定のメールを送りました。メールを確認してね');
+});
+$('aResend').addEventListener('click',async()=>{try{await cloud.U.sendEmailVerification(cloud.auth.currentUser);setAuthMsg('確認メールをもう一度送りました')}catch(err){setAuthMsg(aerr(err),true)}});
+$('aChecked').addEventListener('click',async()=>{
+  try{const u=cloud.auth.currentUser;await cloud.U.reload(u);await u.getIdToken(true);user=u;acctBtn();
+    if(u.emailVerified){openAuth('in');toast('メールの確認ができました。登録・報告ができます')}else setAuthMsg('まだ確認できていません。メールのリンクを押してね',true)}catch(err){setAuthMsg(aerr(err),true)}
+});
+$('aOut').addEventListener('click',async()=>{await cloud.U.signOut(cloud.auth);showModal('mAuth',false);toast('ログアウトしました')});
+$('aDel').addEventListener('click',async e=>{
+  const b=e.currentTarget;
+  if(!b.dataset.ok){b.dataset.ok=1;b.textContent='本当に削除する（元に戻せません）';return}
+  try{await cloud.U.deleteUser(cloud.auth.currentUser);showModal('mAuth',false);toast('アカウントを削除しました')}catch(err){setAuthMsg(aerr(err),true)}
+});
+async function startCloud(){
+  try{
+    const B=`https://www.gstatic.com/firebasejs/${FBV}/`;
+    const [A,U,F]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+    const app=A.initializeApp({apiKey:FB.apiKey,authDomain:FB.authDomain,projectId:FB.projectId,appId:FB.appId});
+    const auth=U.getAuth(app);auth.languageCode='ja';
+    await U.setPersistence(auth,U.browserLocalPersistence).catch(()=>{});
+    let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.initializeFirestore(app,{})}
+    cloud={U,F,auth,db};
+    U.onAuthStateChanged(auth,u=>{user=u;acctBtn();if(sel)render()});
+    F.onSnapshot(F.query(F.collection(db,'stores'),F.limit(3000)),snap=>{
+      stores=valid(snap.docs.map(d=>Object.assign({},d.data(),{id:d.id})))||[];
+      if(sel&&!stores.some(x=>x.id===sel))sel=null;
+      render();
+    },()=>toast('共有データを読み込めませんでした'));
+  }catch(e){cloud=null;stores=load();render();toast('共有モードを始められませんでした。この端末の中だけに保存します')}
+}
+if(FB){stores=[];startCloud()}
 render();
 }
 </script>

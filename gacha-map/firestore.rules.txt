@@ -1,0 +1,60 @@
+rules_version = '2';
+// ガチャマップ Firestore セキュリティルール
+// ・だれでも見られる（読み取りのみ）
+// ・書き込めるのは「メール確認が済んだログイン中のユーザー」だけ
+// ・項目の種類・文字数・日本国内の位置を、サーバー側でもチェック
+// ・同じお店への書き込みは3秒以上あける（連打・荒らし対策）
+// ・お店の削除は登録した本人だけ
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function verified() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'password';
+    }
+
+    function str(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    function validStore(d) {
+      return d.keys().hasOnly(['name','type','lat','lng','hours','addr','osm','machines',
+                               'by','createdAt','updatedAt','updatedBy'])
+        && d.keys().hasAll(['name','type','lat','lng','hours','addr','machines',
+                            'by','createdAt','updatedAt','updatedBy'])
+        && str(d.name, 60) && d.name.size() >= 2
+        && d.type in ['shop','game','mall','station']
+        && d.lat is number && d.lat >= 20 && d.lat <= 46
+        && d.lng is number && d.lng >= 122 && d.lng <= 154
+        && str(d.hours, 40) && str(d.addr, 80)
+        && (!('osm' in d) || (str(d.osm, 30) && d.osm.matches('^(node|way|relation)/[0-9]+$')))
+        && d.machines is list && d.machines.size() <= 300
+        && d.updatedAt == request.time
+        && d.updatedBy == request.auth.uid;
+    }
+
+    match /stores/{storeId} {
+      allow read: if true;
+
+      allow create: if verified()
+        && storeId.matches('^[A-Za-z0-9_-]{1,40}$')
+        && validStore(request.resource.data)
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if verified()
+        && validStore(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['machines','hours','addr','updatedAt','updatedBy'])
+        && request.time > resource.data.updatedAt + duration.value(3, 's');
+
+      allow delete: if verified() && resource.data.by == request.auth.uid;
+    }
+
+    // それ以外の場所は、だれも読み書きできない
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
