@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
 <title>ガチャマップ</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-iI3ZqBvmLHT/ueh/plNcGlLRdwVm5wz9pjN7Y2bPKtw='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://www.gstatic.com 'sha256-1QvGhModnwFrFeY4AXmixjeadhgdXOGm85RHhlxuEF4='; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cyberjapandata.gsi.go.jp https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://nominatim.openstreetmap.org https://msearch.gsi.go.jp https://overpass-api.de https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc=" crossorigin="anonymous">
@@ -52,6 +52,12 @@ header{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000002e;padding:c
 .fpin span{transform:rotate(45deg);font-size:15px;line-height:1}
 .leaflet-popup-content{font:14px/1.5 "M PLUS Rounded 1c",-apple-system,"Hiragino Sans",sans-serif;margin:12px 14px}
 .leaflet-popup-content .btn{margin:8px 0 6px}
+.rank{list-style:none;margin:8px 0;padding:0}
+.rank li{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.rank .no{width:38px;text-align:center;font-weight:800;font-size:17px;flex:none}
+.rank .nm{flex:1;min-width:0}.rank .nm b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .pt{font-weight:800;color:var(--red);white-space:nowrap}
+.rank li.mine{background:#fff6d9;border-radius:10px}
 .soc{padding:4px 14px 18px;border-top:1px solid var(--line)}
 .soc h4{margin:16px 0 4px;font-size:16px}
 .likebtn{border:1px solid #dadce0;background:#fff;border-radius:999px;font:inherit;font-weight:800;min-height:44px;padding:0 16px;cursor:pointer;color:var(--ink);margin-top:12px}
@@ -153,6 +159,7 @@ header{position:relative}
       <button type="button" id="qc" aria-label="クリア">✕</button>
       <button id="qs" aria-label="場所を検索">🔍</button>
     </form>
+    <button class="icon" id="rankBtn" type="button" aria-label="全国ランキング">🏆</button>
     <button class="icon acct" id="acct" type="button" aria-label="アカウント">👤</button>
   </div>
   <div class="sugg" id="sugg"></div>
@@ -247,11 +254,21 @@ header{position:relative}
     <div class="pts" id="aPts"></div>
     <label for="aNick2">ニックネーム（みんなに表示されます）</label>
     <div style="display:flex;gap:8px"><input id="aNick2" maxlength="20" style="flex:1"><button type="button" class="btn b-line" id="aNickSave">保存</button></div>
+    <label class="meta" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="aHide" style="width:22px;height:22px">全国ランキングに名前を出さない</label>
     <div class="acts" style="justify-content:flex-start;flex-wrap:wrap"><button type="button" class="btn b-line" id="aOut">ログアウト</button><button type="button" class="btn b-line" id="aDel" style="color:#c5221f">アカウントを削除</button></div>
   </div>
   <p class="meta" style="margin:10px 0 0"><a href="terms.html" target="_blank" rel="noopener">利用規約・プライバシーポリシー・安全のルール</a></p>
   <div class="acts"><button type="button" class="btn b-line" data-close>閉じる</button><button class="btn b-red" id="aGo">ログイン</button></div>
 </form></div>
+<div class="modal" id="mRank"><div class="card">
+  <h3>🏆 全国ランキング TOP30</h3>
+  <div class="tabs" id="rTabs"><button type="button" data-rk="total">総合</button><button type="button" data-rk="month">今月</button></div>
+  <div id="rMine"></div>
+  <ol class="rank" id="rList"></ol>
+  <p class="meta" id="rInfo"></p>
+  <p class="meta">ポイント：お店の登録+10・写真+5・在庫の報告+2（1店1日1回）・もらったいいね+1。通報で非表示になった投稿は数えません。</p>
+  <div class="acts"><button class="btn b-line" data-close>閉じる</button></div>
+</div></div>
 <div class="modal" id="mPhoto"><div class="card"><img id="bigImg" alt=""><p class="meta" id="bigCap"></p><div class="acts"><button class="btn b-line" data-close>閉じる</button></div></div></div>
 <input type="file" id="phFile" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
@@ -1005,17 +1022,51 @@ async function nameOf(uid){
 async function saveNick(v){
   if(!cloud||!user||!user.emailVerified)return false;
   if(!nickOk(v)){toast('ニックネームは1〜20文字で入れてね（@ や < > は使えません）');return false}
-  try{await cloud.F.setDoc(cloud.F.doc(cloud.db,'users',user.uid),{name:nickClean(v),updatedAt:cloud.F.serverTimestamp()});names.set(user.uid,nickClean(v));return true}
+  try{await cloud.F.setDoc(cloud.F.doc(cloud.db,'users',user.uid),{name:nickClean(v),hideRank:!!$('aHide').checked,updatedAt:cloud.F.serverTimestamp()});names.set(user.uid,nickClean(v));return true}
   catch(e){toast('ニックネームを保存できませんでした');return false}
 }
 async function loadNick(){
   if(!cloud||!user)return;
   let n='';
-  try{const d=await cloud.F.getDoc(cloud.F.doc(cloud.db,'users',user.uid));if(d.exists())n=nickClean(d.data().name)}catch(e){}
+  try{const d=await cloud.F.getDoc(cloud.F.doc(cloud.db,'users',user.uid));if(d.exists()){n=nickClean(d.data().name);$('aHide').checked=d.data().hideRank===true}}catch(e){}
   if(!n&&user.emailVerified){let p='';try{p=localStorage.getItem('gachamap-nick')||''}catch(e){}if(nickOk(p)&&await saveNick(p))n=nickClean(p)}
   $('aNick2').value=n;
 }
 $('aNickSave').addEventListener('click',async()=>{if(await saveNick($('aNick2').value))toast('ニックネームを保存しました')});
+$('aHide').addEventListener('change',async e=>{
+  if(!nickOk($('aNick2').value)){e.target.checked=!e.target.checked;return toast('先にニックネームを入れて保存してね')}
+  if(await saveNick($('aNick2').value))toast(e.target.checked?'ランキングに名前を出さないようにしました（次の更新から）':'ランキングに名前を出すようにしました（次の更新から）');
+  else e.target.checked=!e.target.checked;
+});
+/* ===== 🏆 全国ランキング（GitHubで1時間ごとに計算したファイルを読むだけ） ===== */
+let rankData=null,rankTab='total',myHash='';
+const LV_NAMES=new Set(LEVELS.map(x=>x[1]));
+async function openRank(){
+  showModal('mRank',true);$('rList').innerHTML='<li class="meta">読み込み中…</li>';$('rMine').innerHTML='';
+  try{const r=await fetch('data/ranking.json',{cache:'no-cache'});if(!r.ok)throw 0;rankData=await r.json()}catch(e){rankData=null}
+  myHash='';
+  if(user){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('gachamap:'+user.uid));myHash=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16)}catch(e){}}
+  drawRank();
+}
+function rankRows(list){
+  return(Array.isArray(list)?list:[]).slice(0,60).map(x=>({rank:Math.max(1,Math.min(9999,x&&x.rank|0)),name:clean(x&&x.name,20)||'ガチャ好きさん',points:Math.max(0,x&&x.points|0),
+    level:LV_NAMES.has(x&&x.level)?x.level:'',me:/^[0-9a-f]{16}$/.test(x&&x.me)?x.me:''}));
+}
+function drawRank(){
+  document.querySelectorAll('#rTabs button').forEach(b=>b.classList.toggle('on',b.dataset.rk===rankTab));
+  if(!rankData||typeof rankData!=='object'){
+    $('rList').innerHTML='<li class="meta">ランキングは、みんなで共有するモード（Firebase）の準備ができると、1時間ごとに更新されて表示されます。</li>';$('rInfo').textContent='';return}
+  const list=rankRows(rankTab==='month'?rankData.month&&rankData.month.list:rankData.total);
+  const medal=n=>n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
+  $('rList').innerHTML=list.length?list.map(x=>`<li class="${myHash&&x.me===myHash?'mine':''}"><span class="no">${medal(x.rank)}</span><span class="nm"><b>${esc(x.name)}</b><span class="meta">${esc(x.level)}</span></span><span class="pt">${x.points}pt</span></li>`).join('')
+    :'<li class="meta">まだランキングに入っている人がいません。お店を登録して1位をめざそう！</li>';
+  const mine=list.find(x=>myHash&&x.me===myHash);
+  $('rMine').innerHTML=!user?'<p class="meta">ログインしてお店を登録すると、ランキングに参加できます。</p>':mine?`<p class="ok">あなたは <b>${mine.rank}位</b>（${mine.points}pt）です！</p>`:'<p class="meta">あなたはまだTOP30に入っていません。自分のポイントは👤から見られます。</p>';
+  let upd='';try{upd=new Date(clean(rankData.updated,30)).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){}
+  $('rInfo').textContent=`${rankTab==='month'?clean(rankData.month&&rankData.month.label,20)+'の':'これまでの合計の'}ランキング${upd&&upd!=='Invalid Date'?'・'+upd+' 更新':''}（1時間ごとに更新）`;
+}
+$('rankBtn').addEventListener('click',openRank);
+document.querySelectorAll('#rTabs button').forEach(b=>b.addEventListener('click',()=>{rankTab=b.dataset.rk;drawRank()}));
 function level(p){let l=LEVELS[0],n=null;for(const x of LEVELS){if(p>=x[0])l=x;else{n=x;break}}return{name:l[1],next:n}}
 async function showPoints(){
   const el=$('aPts');if(!cloud||!user){el.textContent='';return}
